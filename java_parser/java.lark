@@ -1,5 +1,6 @@
 // Java grammar for Lark
 
+// Modifiers
 ?modifier: "private"        -> private
           | "public"        -> public
           | "protected"     -> protected
@@ -13,11 +14,25 @@
 
 modifiers: modifier+
 
+// Package
+package_stmt: "package" path ";"
 
+// Import
+import_stmt: "import" path ";"
+
+// Annotation
+annotation: "@" CNAME ("("  ")")?
+
+// Common
+path: CNAME ("." (CNAME|STAR))* 
+STAR: /\*/
+
+// Import
+%import common.CNAME
 %import common.ESCAPED_STRING
 %import common.SIGNED_NUMBER
 %import common.WS
 
-// Ignore list
+// Ignore
 %ignore /\/\/.*/
 %ignore WS

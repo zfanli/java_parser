@@ -7,8 +7,8 @@ class TestModifiers(unittest.TestCase):
     def test_modifier_case1(self):
 
         text = "private public default protected"
-        parser = get_parser("modifiers")
-        tree = parser.parse(text)
+        tree = get_parser("modifiers").parse(text)
+        print(tree)
         result = ModifiersTransformer().transform(tree)
         print(result)
         expected = {
@@ -29,8 +29,8 @@ class TestModifiers(unittest.TestCase):
         volatile
         abstract
         """
-        parser = get_parser("modifiers")
-        tree = parser.parse(text)
+        tree = get_parser("modifiers").parse(text)
+        print(tree)
         result = ModifiersTransformer().transform(tree)
         print(result)
         expected = {
