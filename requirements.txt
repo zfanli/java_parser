@@ -1,0 +1,3 @@
+lark-parser
+pytest
+pytest-cov

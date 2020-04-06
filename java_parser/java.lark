@@ -1,0 +1,23 @@
+// Java grammar for Lark
+
+?modifier: "private"        -> private
+          | "public"        -> public
+          | "protected"     -> protected
+          | "default"       -> default
+          | "final"         -> final
+          | "static"        -> static
+          | "transient"     -> transient
+          | "synchronized"  -> synchronized
+          | "volatile"      -> volatile
+          | "abstract"      -> abstract
+
+modifiers: modifier+
+
+
+%import common.ESCAPED_STRING
+%import common.SIGNED_NUMBER
+%import common.WS
+
+// Ignore list
+%ignore /\/\/.*/
+%ignore WS
