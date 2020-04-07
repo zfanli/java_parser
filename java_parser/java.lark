@@ -37,8 +37,7 @@ anno_param_kv_list: (name "=")? anno_param_list
 anno_param_list: "{" anno_param_base ("," anno_param_base)* "}"
 
 // Field
-field_stmt: comment? annotations? modifiers? class_type name ("=" initial_declare)?
-initial_declare:
+field: comment? annotations? modifiers? class_type name ("=" test)? ";"
 
 // Method
 break_stmt: "break" ";"
