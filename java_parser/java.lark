@@ -18,14 +18,85 @@ modifiers: modifier+
 package_stmt: "package" path ";"
 
 // Import
-import_stmt: "import" path ";"
+imports: import_stmt+
+import_stmt: "import" modifier? path ";"
 
 // Annotation
-annotation: "@" CNAME ("("  ")")?
+annotations: annotation+
+annotation: "@" name ("(" anno_params? ")")?
+anno_params: anno_param ("," anno_param)*
+?anno_param: anno_param_kv
+          | anno_param_kv_list
+          | anno_param_base
+?anno_param_base: annotation
+          | primary
+          | dotted_name
+          | name
+anno_param_kv: name "=" anno_param_base
+anno_param_kv_list: (name "=")? anno_param_list
+anno_param_list: "{" anno_param_base ("," anno_param_base)* "}"
+
+// Field
+field_stmt: comment? annotations? modifiers? class_type name ("=" initial_declare)?
+initial_declare:
+
+// Method
+break_stmt: "break" ";"
+continue_stmt: "continue" ";"
+return_stmt: "return" [test] ";"
+throw_stmt: "throw" [test] ";"
+?simple_stmt: break_stmt | continue_stmt | return_stmt | throw_stmt
+
+// Test
+?test: or_test ("?" or_test ":" test)?
+?or_test: and_test ("||" and_test)*
+?and_test: not_test ("&&" not_test)*
+?not_test: "!" not_test -> not_test_body
+         | comparison
+?comparison: expr (_comp_op expr)*
+?expr: xor_expr ("|" xor_expr)*
+?xor_expr: and_expr ("^" and_expr)*
+?and_expr: shift_expr ("&" shift_expr)*
+?shift_expr: arith_expr (_shift_op arith_expr)*
+?arith_expr: term (_add_op term)*
+?term: factor (_mul_op factor)*
+?factor: _factor_op factor | power
+?power: cast_expr ("**" factor)?
+?cast_expr: cast_type? new_expr
+?new_expr: new? atom_expr
+?atom_expr: atom_expr "(" [arguments] ")"       -> funccall
+          | atom_expr "[" number "]"            -> getitem
+          | atom_expr "." [generic_type] name   -> getattr
+          | atom
+?atom: primary
+     | class_type
+?class_type: name generic_type?
+?generic_type: "<" [class_type ("," class_type)*] ">"
+?cast_type: "(" class_type ")"
+arguments: test ("," test)*
+
+!_factor_op: "+"|"-"|"~"
+!_add_op: "+"|"-"
+!_shift_op: "<<"|">>"
+!_mul_op: "*"|"@"|"/"|"%"|"//"
+!_comp_op: "<"|">"|"=="|">="|"<="|"<>"|"!="
+!augassign: ("+=" | "-=" | "*=" | "@=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "**=" | "//=")
 
 // Common
-path: CNAME ("." (CNAME|STAR))* 
-STAR: /\*/
+!comment: ("/*" | "/**") (/(\*)?.+/)* "*/"
+?return_type: class_type
+path: name ("." (name | star))*
+name: CNAME
+dotted_name: CNAME ("." CNAME)+
+star: /\*/
+primary: boolean | string | number | null
+string: ESCAPED_STRING
+number: SIGNED_NUMBER
+boolean: true | false
+true: "true"
+false: "false"
+null: "null"
+new: "new"
 
 // Import
 %import common.CNAME

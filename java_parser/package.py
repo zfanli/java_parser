@@ -13,6 +13,7 @@ class PackageTransformer(Transformer):
 
         return {
             "package": child,
+            "type": "PACKAGE",
             "lineno": meta.line,
             "linenoEnd": meta.end_line,
         }

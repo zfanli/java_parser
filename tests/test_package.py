@@ -18,6 +18,7 @@ class TestPackage(unittest.TestCase):
         print(result)
         expected = {
             "package": "path.to.package.PackageName",
+            "type": "PACKAGE",
             "lineno": 1,
             "linenoEnd": 1,
         }
@@ -30,5 +31,10 @@ class TestPackage(unittest.TestCase):
         print(tree)
         result = TestPackageTransformer().transform(tree)
         print(result)
-        expected = {"package": "path.to.package.*", "lineno": 1, "linenoEnd": 1}
+        expected = {
+            "package": "path.to.package.*",
+            "type": "PACKAGE",
+            "lineno": 1,
+            "linenoEnd": 1,
+        }
         self.assertEqual(result, expected, "Not matched.")
