@@ -12,5 +12,5 @@ def get_parser(start):
         parser="lalr",
         propagate_positions=True,
         start=start,
-        debug=True,
+        debug=False,
     )

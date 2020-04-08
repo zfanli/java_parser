@@ -2,10 +2,9 @@ import unittest
 from tests.helper import get_parser
 from java_parser.imports import ImportTransformer
 from java_parser.common import CommonTransformer
-from java_parser.modifiers import ModifierTransformer
 
 
-class TestImportTransformer(CommonTransformer, ModifierTransformer, ImportTransformer):
+class TestImportTransformer(CommonTransformer, ImportTransformer):
     pass
 
 

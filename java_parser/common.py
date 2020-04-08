@@ -16,6 +16,16 @@ def operator_pair(target):
 
 @v_args(meta=True)
 class CommonTransformer(Transformer):
+    def list(self, child, _):
+        return child
+
+    def literal(self, child, _):
+        (child,) = child
+        return str(child)
+
+    def ellipsis(self, _, __):
+        return "..."
+
     def new(self, _, __):
         return "new"
 
@@ -28,22 +38,11 @@ class CommonTransformer(Transformer):
     def null(self, _, __):
         return None
 
-    def path(self, child, _):
-        return ".".join(child)
-
-    def dotted_name(self, child, _):
+    def dotjoin(self, child, _):
         return ".".join(child)
 
     def comment(self, child, _):
         return [str(x) for x in child]
-
-    def name(self, child, _):
-        (child,) = child
-        return str(child)
-
-    def star(self, child, _):
-        (child,) = child
-        return str(child)
 
     def boolean(self, child, _):
         (child,) = child
@@ -70,16 +69,44 @@ class CommonTransformer(Transformer):
         if len(child) == 0:
             child = ["<>"]
 
-        return {"value": child}
+        return child
 
     def class_type(self, child, _):
 
         value = child[0]
         result = value
         if len(child) == 2:
-            result = {"value": child[0], "generic": child[1]}
+            if type(result) == dict:
+                result["arraySuffix"] = child[1]
+            else:
+                result = {"name": result, "arraySuffix": child[1]}
 
         return result
+
+    def class_ellipsis(self, child, _):
+
+        value = child[0]
+        result = value
+        if len(child) == 2:
+            if type(result) == dict:
+                result["name"] = result["name"] + "..."
+            else:
+                result = result + "..."
+
+        return result
+
+    def class_generic(self, child, _):
+
+        value = child[0]
+        result = value
+        if len(child) == 2:
+            result = {"name": child[0], "generic": child[1]}
+
+        return result
+
+    def arr_suffix(self, child, _):
+        (child,) = child
+        return str(child)
 
     def getattr(self, child, _):
         if len(child) == 2:
@@ -229,4 +256,52 @@ class CommonTransformer(Transformer):
             result = child[0]
         else:
             result = {"value": child[1], "cast": child[0], "type": "CAST_EXPRESSION"}
+        return result
+
+    def argvalue(self, child, _):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            result = {"key": child[0], "value": child[1], "type": "KEY_VALUE_PAIR"}
+        return result
+
+    def parameter(self, child, _):
+        class_type = child[0]
+        name = child[1]
+        result = {"name": name, "classType": class_type, "type": "PARAMETER"}
+        return result
+
+    def factor(self, child, _):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            op = child[0]
+            rest = child[1]
+            result = {"value": rest, "operator": str(op), "type": "FACTOR_EXPRESSION"}
+        return result
+
+    def binary_bf(self, child, _):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            op = child[0]
+            rest = child[1]
+            result = {
+                "value": rest,
+                "operator": str(op),
+                "type": "BINARY_BEFORE_EXPRESSION",
+            }
+        return result
+
+    def binary_af(self, child, _):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            op = child[1]
+            rest = child[0]
+            result = {
+                "value": rest,
+                "operator": str(op),
+                "type": "BINARY_AFTER_EXPRESSION",
+            }
         return result

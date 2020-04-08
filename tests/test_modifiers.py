@@ -1,6 +1,10 @@
 import unittest
 from tests.helper import get_parser
-from java_parser.modifiers import ModifiersTransformer
+from java_parser.common import CommonTransformer
+
+
+class TestModifiersTransformer(CommonTransformer):
+    pass
 
 
 class TestModifiers(unittest.TestCase):
@@ -9,13 +13,9 @@ class TestModifiers(unittest.TestCase):
         text = "private public default protected"
         tree = get_parser("modifiers").parse(text)
         print(tree)
-        result = ModifiersTransformer().transform(tree)
+        result = TestModifiersTransformer().transform(tree)
         print(result)
-        expected = {
-            "modifiers": ["private", "public", "default", "protected"],
-            "lineno": 1,
-            "linenoEnd": 1,
-        }
+        expected = ["private", "public", "default", "protected"]
         self.assertEqual(result, expected, "Not matched.")
 
     def test_modifier_case2(self):
@@ -31,18 +31,14 @@ class TestModifiers(unittest.TestCase):
         """
         tree = get_parser("modifiers").parse(text)
         print(tree)
-        result = ModifiersTransformer().transform(tree)
+        result = TestModifiersTransformer().transform(tree)
         print(result)
-        expected = {
-            "modifiers": [
-                "final",
-                "static",
-                "transient",
-                "synchronized",
-                "volatile",
-                "abstract",
-            ],
-            "lineno": 3,
-            "linenoEnd": 8,
-        }
+        expected = [
+            "final",
+            "static",
+            "transient",
+            "synchronized",
+            "volatile",
+            "abstract",
+        ]
         self.assertEqual(result, expected, "Not matched.")

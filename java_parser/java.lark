@@ -1,18 +1,18 @@
 // Java grammar for Lark
 
 // Modifiers
-?modifier: "private"        -> private
-          | "public"        -> public
-          | "protected"     -> protected
-          | "default"       -> default
-          | "final"         -> final
-          | "static"        -> static
-          | "transient"     -> transient
-          | "synchronized"  -> synchronized
-          | "volatile"      -> volatile
-          | "abstract"      -> abstract
+!modifier: "private"        -> literal
+          | "public"        -> literal
+          | "protected"     -> literal
+          | "default"       -> literal
+          | "final"         -> literal
+          | "static"        -> literal
+          | "transient"     -> literal
+          | "synchronized"  -> literal
+          | "volatile"      -> literal
+          | "abstract"      -> literal
 
-modifiers: modifier+
+modifiers: modifier+        -> list
 
 // Package
 package_stmt: "package" path ";"
@@ -37,14 +37,38 @@ anno_param_kv_list: (name "=")? anno_param_list
 anno_param_list: "{" anno_param_base ("," anno_param_base)* "}"
 
 // Field
-field: comment? annotations? modifiers? class_type name ("=" test)? ";"
+fields: field+
+field: comment? field_annotation
+field_annotation: annotations? assign_modifier
 
 // Method
+stmt: expr_stmt | compound_stmt
+?expr_stmt: simple_stmt | test_stmt
+simple_stmt: comment? simple_base
+?simple_base: break_stmt | continue_stmt | return_stmt | throw_stmt
+test_stmt: comment? assign_modifier
+?assign_modifier: modifiers? assign_type
+?assign_type: test? assign_base
+assign_base: test "=" test ";" | test ";"
 break_stmt: "break" ";"
 continue_stmt: "continue" ";"
-return_stmt: "return" [test] ";"
-throw_stmt: "throw" [test] ";"
-?simple_stmt: break_stmt | continue_stmt | return_stmt | throw_stmt
+return_stmt: "return" test? ";"
+throw_stmt: "throw" test ";"
+
+?compound_stmt: if_stmt | switch_stmt
+switch_stmt: "switch" "(" test ")" case_suit
+case_suit: "{" case_stmt* "}" -> list
+case_stmt: case_keys suit
+case_keys: case_key+                              -> list
+case_key: ("case" | "default") case_type? ":"
+case_default_suit: case_keys "default" ":" suit
+                 | "default" ":" suit
+?case_type: primary | dotted_name | name
+if_stmt: "if" "(" test ")" single_stmt? elif_stmt* else_stmt?
+elif_stmt: "else" "if" "(" test ")" single_stmt?
+else_stmt: "else" single_stmt?
+?single_stmt: "{" suit "}" | expr_stmt            -> list
+suit: stmt+                                       -> list
 
 // Test
 ?test: or_test ("?" or_test ":" test)?
@@ -58,22 +82,31 @@ throw_stmt: "throw" [test] ";"
 ?and_expr: shift_expr ("&" shift_expr)*
 ?shift_expr: arith_expr (_shift_op arith_expr)*
 ?arith_expr: term (_add_op term)*
-?term: factor (_mul_op factor)*
+?term: binary_bf (_mul_op binary_bf)*
+?binary_bf: _binary_op binary_bf | factor
 ?factor: _factor_op factor | power
 ?power: cast_expr ("**" factor)?
-?cast_expr: cast_type? new_expr
-?new_expr: new? atom_expr
-?atom_expr: atom_expr "(" [arguments] ")"       -> funccall
-          | atom_expr "[" number "]"            -> getitem
-          | atom_expr "." [generic_type] name   -> getattr
+?cast_expr: cast_type new_expr | new_expr
+?new_expr: new atom_expr | atom_expr
+?atom_expr: atom_expr "(" arguments? ")"          -> funccall
+          | atom_expr "[" number "]"              -> getitem
+          | atom_expr "." name                    -> getattr
+          | atom_expr chain_generic name          -> getattr
+          | atom_expr _binary_op                  -> binary_af
           | atom
 ?atom: primary
      | class_type
-?class_type: name generic_type?
-?generic_type: "<" [class_type ("," class_type)*] ">"
+     | "(" test ")"
+?chain_generic: "." generic_type
+?class_type: class_ellipsis arr_suffix?
+?class_ellipsis: class_generic ellipsis?
+?class_generic: name generic_type?
+?generic_type: "<" class_type ("," class_type)* ">" | "<>"
 ?cast_type: "(" class_type ")"
-arguments: test ("," test)*
+arguments: argvalue ("," argvalue)*
+?argvalue: test ("=" test)?
 
+!_binary_op: "++"|"--"
 !_factor_op: "+"|"-"|"~"
 !_add_op: "+"|"-"
 !_shift_op: "<<"|">>"
@@ -81,23 +114,38 @@ arguments: test ("," test)*
 !_comp_op: "<"|">"|"=="|">="|"<="|"<>"|"!="
 !augassign: ("+=" | "-=" | "*=" | "@=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "**=" | "//=")
 
+// Parameter
+parameter: class_type name
+
 // Common
 !comment: ("/*" | "/**") (/(\*)?.+/)* "*/"
 ?return_type: class_type
-path: name ("." (name | star))*
-name: CNAME
-dotted_name: CNAME ("." CNAME)+
-star: /\*/
+path: name ("." (name | star))*    -> dotjoin
+name: CNAME                        -> literal
+dotted_name: CNAME ("." CNAME)+    -> dotjoin
+star: /\*/                         -> literal
 primary: boolean | string | number | null
 string: ESCAPED_STRING
 number: SIGNED_NUMBER
 boolean: true | false
-true: "true"
-false: "false"
-null: "null"
-new: "new"
+!true: "true"
+!false: "false"
+!null: "null"
+!new: "new"              -> literal
+!ellipsis: "..."         -> literal
+arr_suffix: /(\[\])+/
+!primary_type: "int"     -> literal
+             | "long"    -> literal
+             | "short"   -> literal
+             | "float"   -> literal
+             | "double"  -> literal
+             | "char"    -> literal
+             | "byte"    -> literal
+             | "boolean" -> literal
+             | "void"    -> literal
 
 // Import
+%import common.UCASE_LETTER
 %import common.CNAME
 %import common.ESCAPED_STRING
 %import common.SIGNED_NUMBER
