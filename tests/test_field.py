@@ -295,7 +295,7 @@ class TestField(unittest.TestCase):
         text = """
         /**
         * Test Comment.
-          End.
+        * End.
         */
         @Annotation
         @Another(Some, Values, Here)
@@ -324,7 +324,7 @@ class TestField(unittest.TestCase):
                         "param": ["Some", "Values", "Here"],
                     },
                 ],
-                "comment": ["/**", "* Test Comment.", "End.", "*/"],
+                "comment": ["/**", "* Test Comment.", "* End.", "*/"],
                 "type": "FIELD",
                 "lineno": 2,
                 "linenoEnd": 8,

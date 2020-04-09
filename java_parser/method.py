@@ -12,24 +12,24 @@ class MethodTransformer(Transformer):
         return child
 
     def break_stmt(self, _, meta):
-        return {"name": "break", "type": "BREAK"}
+        return {"body": "break", "type": "BREAK"}
 
     def continue_stmt(self, _, meta):
-        return {"name": "continue", "type": "CONTINUE"}
+        return {"body": "continue", "type": "CONTINUE"}
 
     def return_stmt(self, child, meta):
-        result = {"name": "return", "type": "RETURN"}
+        result = {"body": "return", "type": "RETURN"}
         if len(child) == 1:
-            result["value"] = child[0]
+            result["body"] = child[0]
         return result
 
     def throw_stmt(self, child, meta):
-        result = {"name": "throw", "type": "THROW", "value": child[0]}
+        result = {"type": "THROW", "body": child[0]}
         return result
 
     def assign_base(self, child, _):
         if len(child) == 1:
-            result = {"name": child[0]}
+            result = {"body": child[0]}
         else:
             result = {"name": child[0], "assign": child[1]}
         return result
@@ -71,12 +71,6 @@ class MethodTransformer(Transformer):
             "linenoEnd": meta.end_line,
         }
 
-    def small_stmt(self, child, meta):
-        (child,) = child
-        if type(child) == str:
-            child = {"value": child}
-        return {**child, "lineno": meta.line, "linenoEnd": meta.end_line}
-
     def if_stmt(self, child, meta):
         result = {
             "type": "IF",
@@ -87,7 +81,7 @@ class MethodTransformer(Transformer):
         if len(child) > 1:
             rest = child[1:]
             if type(rest[0]) == list:
-                result["value"] = rest[0]
+                result["body"] = rest[0]
                 rest = rest[1:]
             if len(rest) != 0:
                 result["chain"] = rest
@@ -101,7 +95,7 @@ class MethodTransformer(Transformer):
             "linenoEnd": meta.end_line,
         }
         if len(child) == 2:
-            result["value"] = child[1]
+            result["body"] = child[1]
         return result
 
     def else_stmt(self, child, meta):
@@ -111,43 +105,25 @@ class MethodTransformer(Transformer):
             "linenoEnd": meta.end_line,
         }
         if len(child) == 1:
-            result["value"] = child[0]
-        return result
-
-    def case_default_suit(self, child, meta):
-        if len(child) == 1:
-            result = {
-                "caseKey": ["<default>"],
-                "value": child[0],
-                "type": "DEFAULT_CASE",
-                "lineno": meta.line,
-                "linenoEnd": meta.end_line,
-            }
-        else:
-            result = {
-                "caseKey": [*child[0], "<default>"],
-                "value": child[1],
-                "type": "DEFAULT_CASE",
-                "lineno": meta.line,
-                "linenoEnd": meta.end_line,
-            }
+            result["body"] = child[0]
         return result
 
     def case_key(self, child, meta):
         if len(child) == 1:
-            result = child[0]
+            result = {"caseKey": child[0]}
         else:
-            result = "<default>"
+            result = {"caseKey": "default"}
         return result
 
-    def case_stmt(self, child, meta):
+    def case_suit(self, child, meta):
         result = {
-            "caseKey": child[0],
-            "value": child[1],
+            **child[0],
             "type": "CASE",
             "lineno": meta.line,
             "linenoEnd": meta.end_line,
         }
+        if len(child) == 2:
+            result["body"] = child[1]
         return result
 
     def switch_stmt(self, child, meta):
@@ -157,10 +133,155 @@ class MethodTransformer(Transformer):
             "lineno": meta.line,
             "linenoEnd": meta.end_line,
         }
-        if len(child) > 1:
-            cases = []
-            for x in child[1:]:
-                cases = cases + x
-            if len(cases) != 0:
-                result["cases"] = cases
+        if len(child) == 2 and len(child[1]) > 0:
+            result["cases"] = child[1]
+        return result
+
+    def for_loop_test(self, child, _):
+        return {
+            "variable": child[0],
+            "test": child[1],
+            "expr": child[2],
+            "type": "FOR_LOOP_TEST",
+        }
+
+    def for_each_test(self, child, _):
+        return {
+            "variable": child[1],
+            "classType": child[0],
+            "list": child[2],
+            "type": "FOR_EACH_TEST",
+        }
+
+    def for_stmt(self, child, meta):
+        result = {
+            "test": child[0],
+            "type": "FOR_LOOP",
+            "lineno": meta.line,
+            "linenoEnd": meta.end_line,
+        }
+        if len(child) == 2:
+            result["body"] = child[1]
+        return result
+
+    def while_stmt(self, child, meta):
+        result = {
+            "test": child[0],
+            "type": "WHILE_LOOP",
+            "lineno": meta.line,
+            "linenoEnd": meta.end_line,
+        }
+        if len(child) == 2:
+            result["body"] = child[1]
+        return result
+
+    def do_while_stmt(self, child, meta):
+        result = {
+            "type": "DO_WHILE_LOOP",
+            "lineno": meta.line,
+            "linenoEnd": meta.end_line,
+        }
+        if len(child) == 1:
+            result["test"] = child[0]
+        else:
+            result["test"] = child[1]
+            result["body"] = child[0]
+        return result
+
+    def finally_stmt(self, child, meta):
+        result = {
+            "type": "FINALLY",
+            "lineno": meta.line,
+            "linenoEnd": meta.end_line,
+        }
+        if len(child) == 1:
+            result["body"] = child[0]
+        return result
+
+    def catch_stmt(self, child, meta):
+        result = {
+            "exceptions": child[0],
+            "type": "CATCH",
+            "lineno": meta.line,
+            "linenoEnd": meta.end_line,
+        }
+        if len(child) == 2:
+            result["body"] = child[1]
+        return result
+
+    def catch_finally_stmt(self, child, meta):
+        result = {}
+        for x in child:
+            if type(x) == dict:
+                result["finally"] = x
+            else:
+                if len(x) > 0:
+                    result["catches"] = x
+        return result
+
+    def try_body(self, child, meta):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            result = {**child[1], "body": child[0]}
+        return result
+
+    def try_stmt(self, child, meta):
+        result = {"type": "TRY", "lineno": meta.line, "linenoEnd": meta.end_line}
+        if len(child) == 1:
+            result = {**result, **child[0]}
+        else:
+            result = {**result, **child[1], "with": child[0]}
+        return result
+
+    def method(self, child, meta):
+        result = {"lineno": meta.line, "linenoEnd": meta.end_line}
+        if len(child) == 1:
+            result = {**child[0], **result}
+        else:
+            result = {**child[1], "comment": child[0], **result}
+        return result
+
+    def method_annotations(self, child, meta):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            result = {**child[1], "annotations": child[0]}
+        return result
+
+    def method_modifiers(self, child, meta):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            result = {**child[1], "modifiers": child[0]}
+        return result
+
+    def method_return(self, child, meta):
+        if len(child) == 1:
+            result = {**child[0], "type": "CONSTRUCTOR"}
+        else:
+            result = {**child[1], "returnType": child[0], "type": "METHOD"}
+        return result
+
+    def method_name(self, child, meta):
+        return {"name": child[0], **child[1]}
+
+    def method_parameters(self, child, meta):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            result = {**child[1], "parameters": child[0]}
+        return result
+
+    def method_throws(self, child, meta):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            result = {**child[1], "throws": child[0]}
+        return result
+
+    def method_body(self, child, meta):
+        result = {}
+        if len(child) == 1:
+            result["body"] = child[0]
         return result

@@ -162,35 +162,57 @@ class TestCommon(unittest.TestCase):
         expected = ["/**", "* Test comment", "* Comment end.", "*/"]
         self.assertEqual(result, expected, "Not matched.")
 
-    def test_comment_case2(self):
+    # def test_comment_case2(self):
 
-        text = """
-        /**
-         Test comment
-         Comment end.
-        */
-        """
-        tree = get_parser("comment").parse(text)
-        print(tree)
-        result = CommonTransformer().transform(tree)
-        print(result)
-        expected = ["/**", "Test comment", "Comment end.", "*/"]
-        self.assertEqual(result, expected, "Not matched.")
+    #     text = """
+    #     /**
+    #      Test comment
+    #      Comment end.
+    #     */
+    #     """
+    #     tree = get_parser("comment").parse(text)
+    #     print(tree)
+    #     result = CommonTransformer().transform(tree)
+    #     print(result)
+    #     expected = ["/**", "Test comment", "Comment end.", "*/"]
+    #     self.assertEqual(result, expected, "Not matched.")
 
-    def test_comment_case3(self):
+    # def test_comment_case3(self):
 
-        text = """
-        /*
-         Test comment
-         Comment end.
-        */
-        """
-        tree = get_parser("comment").parse(text)
-        print(tree)
-        result = CommonTransformer().transform(tree)
-        print(result)
-        expected = ["/*", "Test comment", "Comment end.", "*/"]
-        self.assertEqual(result, expected, "Not matched.")
+    #     text = """
+    #     /*
+    #      Test comment
+    #      Comment end.
+    #     */
+    #     """
+    #     tree = get_parser("comment").parse(text)
+    #     print(tree)
+    #     result = CommonTransformer().transform(tree)
+    #     print(result)
+    #     expected = ["/*", "Test comment", "Comment end.", "*/"]
+    #     self.assertEqual(result, expected, "Not matched.")
+
+    # def test_comment_case4(self):
+
+    #     text = """
+    #     /*
+    #      Test comment
+    #      Comment end.
+    #     */
+
+    #     someThingHere();
+
+    #     /*
+    #      Another comment
+    #      Comment end.
+    #     */
+    #     """
+    #     tree = get_parser("comment").parse(text)
+    #     print(tree)
+    #     result = CommonTransformer().transform(tree)
+    #     print(result)
+    #     expected = ["/*", "Test comment", "Comment end.", "*/"]
+    #     self.assertEqual(result, expected, "Not matched.")
 
     def test_arguments_case1(self):
 
@@ -720,4 +742,14 @@ class TestCommon(unittest.TestCase):
         result = CommonTransformer().transform(tree)
         print(result)
         expected = {"value": "i", "operator": "--", "type": "BINARY_AFTER_EXPRESSION"}
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_test_case15(self):
+
+        text = "(con1 && con2)"
+        tree = get_parser("test").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = {"left": "con1", "right": ["con2"], "type": "TEST_AND"}
         self.assertEqual(result, expected, "Not matched.")

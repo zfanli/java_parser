@@ -7,9 +7,6 @@ from lark import Transformer, v_args
 
 @v_args(meta=True)
 class AnnotationTransformer(Transformer):
-    def annotations(self, child, meta):
-        return child
-
     def annotation(self, child, meta):
 
         value = child[0]

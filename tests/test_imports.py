@@ -17,7 +17,7 @@ class TestImport(unittest.TestCase):
         result = TestImportTransformer().transform(tree)
         print(result)
         expected = {
-            "import": "path.to.package.ClassName",
+            "value": "path.to.package.ClassName",
             "type": "IMPORT",
             "lineno": 1,
             "linenoEnd": 1,
@@ -32,7 +32,7 @@ class TestImport(unittest.TestCase):
         result = TestImportTransformer().transform(tree)
         print(result)
         expected = {
-            "import": "path.to.package.*",
+            "value": "path.to.package.*",
             "type": "IMPORT",
             "lineno": 1,
             "linenoEnd": 1,
@@ -47,7 +47,7 @@ class TestImport(unittest.TestCase):
         result = TestImportTransformer().transform(tree)
         print(result)
         expected = {
-            "import": "path.to.package.*",
+            "value": "path.to.package.*",
             "type": "IMPORT",
             "lineno": 1,
             "linenoEnd": 1,
@@ -68,20 +68,20 @@ class TestImport(unittest.TestCase):
         print(result)
         expected = [
             {
-                "import": "path.to.package.*",
+                "value": "path.to.package.*",
                 "type": "IMPORT",
                 "lineno": 2,
                 "linenoEnd": 2,
                 "modifier": "static",
             },
             {
-                "import": "java.util.ArrayList",
+                "value": "java.util.ArrayList",
                 "type": "IMPORT",
                 "lineno": 3,
                 "linenoEnd": 3,
             },
             {
-                "import": "some.other.package.ClassName",
+                "value": "some.other.package.ClassName",
                 "type": "IMPORT",
                 "lineno": 4,
                 "linenoEnd": 4,

@@ -356,4 +356,3 @@ class TestAnnotation(unittest.TestCase):
             },
         ]
         self.assertEqual(result, expected, "Not matched.")
-

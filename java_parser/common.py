@@ -41,6 +41,9 @@ class CommonTransformer(Transformer):
     def dotjoin(self, child, _):
         return ".".join(child)
 
+    def concatjoin(self, child, _):
+        return "".join(child)
+
     def comment(self, child, _):
         return [str(x) for x in child]
 
@@ -73,8 +76,7 @@ class CommonTransformer(Transformer):
 
     def class_type(self, child, _):
 
-        value = child[0]
-        result = value
+        result = child[0]
         if len(child) == 2:
             if type(result) == dict:
                 result["arraySuffix"] = child[1]
@@ -85,8 +87,7 @@ class CommonTransformer(Transformer):
 
     def class_ellipsis(self, child, _):
 
-        value = child[0]
-        result = value
+        result = child[0]
         if len(child) == 2:
             if type(result) == dict:
                 result["name"] = result["name"] + "..."
@@ -97,8 +98,7 @@ class CommonTransformer(Transformer):
 
     def class_generic(self, child, _):
 
-        value = child[0]
-        result = value
+        result = child[0]
         if len(child) == 2:
             result = {"name": child[0], "generic": child[1]}
 
@@ -125,9 +125,6 @@ class CommonTransformer(Transformer):
     def getitem(self, child, _):
         (name, index) = child
         return f"{name}[{int(index)}]"
-
-    def arguments(self, child, _):
-        return child
 
     def funccall(self, child, meta):
 
@@ -304,4 +301,31 @@ class CommonTransformer(Transformer):
                 "operator": str(op),
                 "type": "BINARY_AFTER_EXPRESSION",
             }
+        return result
+
+    def lambda_expr(self, child, meta):
+        return {
+            **child[0],
+            **child[1],
+            "type": "LAMBDA_EXPRESSION",
+            "lineno": meta.line,
+            "linenoEnd": meta.end_line,
+        }
+
+    def lambda_param(self, child, _):
+        result = {}
+        if len(child) == 1:
+            param = child[0]
+            if type(param) == str:
+                param = [param]
+            result = {"parameters": param}
+        return result
+
+    def lambda_body(self, child, _):
+        result = {}
+        if len(child) == 1:
+            body = child[0]
+            if type(body) == dict:
+                body = [body]
+            result = {"body": body}
         return result

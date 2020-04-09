@@ -16,7 +16,7 @@ class ImportTransformer(Transformer):
             (modifier, child) = child
 
         result = {
-            "import": child,
+            "value": child,
             "type": "IMPORT",
             "lineno": meta.line,
             "linenoEnd": meta.end_line,

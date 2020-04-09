@@ -12,6 +12,10 @@ class FieldTransformer(Transformer):
             result = child[0]
         else:
             result = {**child[1], "comment": child[0]}
+        # Convert body into name
+        if "body" in result:
+            result["name"] = result["body"]
+            del result["body"]
         return {
             **result,
             "type": "FIELD",

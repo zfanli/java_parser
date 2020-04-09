@@ -17,7 +17,7 @@ class TestPackage(unittest.TestCase):
         result = TestPackageTransformer().transform(tree)
         print(result)
         expected = {
-            "package": "path.to.package.PackageName",
+            "value": "path.to.package.PackageName",
             "type": "PACKAGE",
             "lineno": 1,
             "linenoEnd": 1,
@@ -32,7 +32,7 @@ class TestPackage(unittest.TestCase):
         result = TestPackageTransformer().transform(tree)
         print(result)
         expected = {
-            "package": "path.to.package.*",
+            "value": "path.to.package.*",
             "type": "PACKAGE",
             "lineno": 1,
             "linenoEnd": 1,

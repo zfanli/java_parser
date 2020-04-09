@@ -22,7 +22,7 @@ imports: import_stmt+
 import_stmt: "import" modifier? path ";"
 
 // Annotation
-annotations: annotation+
+annotations: annotation+           -> list
 annotation: "@" name ("(" anno_params? ")")?
 anno_params: anno_param ("," anno_param)*
 ?anno_param: anno_param_kv
@@ -38,31 +38,80 @@ anno_param_list: "{" anno_param_base ("," anno_param_base)* "}"
 
 // Field
 fields: field+
-field: comment? field_annotation
+field: comment? field_annotation ";"
 field_annotation: annotations? assign_modifier
 
+// Enum
+enum_class_elem: enum_elems ";"
+enum_field: comment? enum_field_modifiers
+enum_field_modifiers: modifiers? "enum" enum_field_name
+enum_field_name: name enum_field_body
+enum_field_body: "{" enum_elems "}"
+enum_elems: enum_elem ("," enum_elem)*       -> list
+enum_elem: comment? enum_elem_name
+enum_elem_name: name enum_elem_args
+enum_elem_args: ("(" arguments ")")? enum_elem_body
+enum_elem_body: ("{" method* "}")?
+
 // Method
+method: comment? method_annotations
+method_annotations: annotations? method_modifiers
+method_modifiers: modifiers? method_return
+method_return: return_type? method_name
+method_name: name method_parameters
+method_parameters: "(" parameters? ")" method_throws
+method_throws: ("throws" classes)? method_body
+method_body: "{" suit? "}"
+classes: class_type ("," class_type)*   -> list
+
+// Class
+clazz: comment? class_package
+class_package: package_stmt? class_imports
+class_imports: imports? class_comment
+class_comment: comment? class_annotations
+class_annotations: annotations? class_modifier
+class_modifier: modifiers? class_identity
+class_identity: (CLASS | ENUM) class_identifier
+class_identifier: class_name class_extends
+class_extends: ("extends" classes)? class_interfaces
+class_interfaces: ("implements" classes)? class_throws
+class_throws: ("throws" classes)? class_body
+class_body: "{" (enum_class_elem| enum_field | field | method)* "}"
+
+// Statement
 stmt: expr_stmt | compound_stmt
 ?expr_stmt: simple_stmt | test_stmt
 simple_stmt: comment? simple_base
 ?simple_base: break_stmt | continue_stmt | return_stmt | throw_stmt
-test_stmt: comment? assign_modifier
+test_stmt: comment? assign_modifier ";"
 ?assign_modifier: modifiers? assign_type
-?assign_type: test? assign_base
-assign_base: test "=" test ";" | test ";"
+?assign_type: class_type? assign_base
+assign_base: test "=" test | test 
 break_stmt: "break" ";"
 continue_stmt: "continue" ";"
 return_stmt: "return" test? ";"
 throw_stmt: "throw" test ";"
 
-?compound_stmt: if_stmt | switch_stmt
-switch_stmt: "switch" "(" test ")" case_suit
-case_suit: "{" case_stmt* "}" -> list
-case_stmt: case_keys suit
-case_keys: case_key+                              -> list
-case_key: ("case" | "default") case_type? ":"
-case_default_suit: case_keys "default" ":" suit
-                 | "default" ":" suit
+test_stmt_inline: comment? assign_modifier        -> test_stmt
+
+?compound_stmt: if_stmt | switch_stmt | for_stmt | while_stmt | do_while_stmt | try_stmt
+try_stmt: "try" try_with? try_body
+?try_with: "(" test_stmt_inline ")"
+try_body: "{" suit? "}" catch_finally_stmt
+catch_finally_stmt: catches_stmt? finally_stmt?
+catches_stmt: catch_stmt*                         -> list
+catch_stmt: "catch" "(" catch_ex ")" "{" suit? "}" 
+catch_ex: parameter ("|" parameter)*              -> list
+finally_stmt: "finally" "{" suit? "}"
+do_while_stmt: "do" "{" suit? "}" "while" "(" test ")"
+while_stmt: "while" "(" test ")" "{" suit? "}"
+for_stmt: "for" "(" for_test ")" "{" suit? "}"
+for_test: test_stmt test ";" test                 -> for_loop_test
+         | class_type test ":" test               -> for_each_test
+switch_stmt: "switch" "(" test ")" case_stmts
+?case_stmts: "{" case_suit* "}"                   -> list
+case_suit: case_key suit?
+case_key: ("case" | "default") test? ":"
 ?case_type: primary | dotted_name | name
 if_stmt: "if" "(" test ")" single_stmt? elif_stmt* else_stmt?
 elif_stmt: "else" "if" "(" test ")" single_stmt?
@@ -71,7 +120,10 @@ else_stmt: "else" single_stmt?
 suit: stmt+                                       -> list
 
 // Test
-?test: or_test ("?" or_test ":" test)?
+?test: or_test ("?" or_test ":" test)? | lambda_expr
+lambda_expr: lambda_param "->" lambda_body
+lambda_param: "(" (parameters | arguments)? ")" | name
+lambda_body: "{" suit? "}" | test_stmt_inline
 ?or_test: and_test ("||" and_test)*
 ?and_test: not_test ("&&" not_test)*
 ?not_test: "!" not_test -> not_test_body
@@ -96,14 +148,15 @@ suit: stmt+                                       -> list
           | atom
 ?atom: primary
      | class_type
+     | name
      | "(" test ")"
 ?chain_generic: "." generic_type
 ?class_type: class_ellipsis arr_suffix?
 ?class_ellipsis: class_generic ellipsis?
-?class_generic: name generic_type?
+?class_generic: class_name generic_type?
 ?generic_type: "<" class_type ("," class_type)* ">" | "<>"
 ?cast_type: "(" class_type ")"
-arguments: argvalue ("," argvalue)*
+arguments: argvalue ("," argvalue)*               -> list
 ?argvalue: test ("=" test)?
 
 !_binary_op: "++"|"--"
@@ -115,13 +168,19 @@ arguments: argvalue ("," argvalue)*
 !augassign: ("+=" | "-=" | "*=" | "@=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "**=" | "//=")
 
 // Parameter
+parameters: parameter ("," parameter)* -> list
 parameter: class_type name
 
 // Common
-!comment: ("/*" | "/**") (/(\*)?.+/)* "*/"
+_NEWLINE: NEWLINE
+CLASS: "class"
+ENUM: "enum"
+!comment: ("/**" | "/*") (/\*.+/)* "*/"
 ?return_type: class_type
 path: name ("." (name | star))*    -> dotjoin
 name: CNAME                        -> literal
+class_name: UCASE_LETTER CNAME     -> concatjoin
+          | primary_type           -> literal
 dotted_name: CNAME ("." CNAME)+    -> dotjoin
 star: /\*/                         -> literal
 primary: boolean | string | number | null
@@ -145,6 +204,7 @@ arr_suffix: /(\[\])+/
              | "void"    -> literal
 
 // Import
+%import common.NEWLINE
 %import common.UCASE_LETTER
 %import common.CNAME
 %import common.ESCAPED_STRING

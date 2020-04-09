@@ -36,14 +36,3 @@ class ModifierTransformer(Transformer):
 
     def abstract(self, _, __):
         return "abstract"
-
-
-@v_args(meta=True)
-class ModifiersTransformer(ModifierTransformer):
-    def modifiers(self, child, meta):
-
-        return {
-            "modifiers": child,
-            "lineno": meta.line,
-            "linenoEnd": meta.end_line,
-        }
