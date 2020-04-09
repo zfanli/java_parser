@@ -36,8 +36,8 @@ something;
 another;
 ```
 
-We know that we can write any thing inside a comment block, so for parse a comment body, the regex maybe like `/\*.*/`, for match any character start with a star symbol. If there is no start symbol prefix, what will happened?
+We know that we can write any thing inside a comment block, so for parse a comment body, the regex maybe like `/\*.*/`, for match any character start with a star symbol. If there is no star symbol prefix, what will happened?
 
 For the above code, `something;` will be parsed as comment, the result will be only `another;` and all of things above it are parsed as comments.
 
-As a solution for this problem, maybe adding stat prefix before parsing would be a good way to resolve it?
+As a solution for this problem, maybe adding star prefix before parsing would be a good way to resolve it?
