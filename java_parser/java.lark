@@ -70,7 +70,7 @@ class_identifier: class_name class_extends
 class_extends: ("extends" classes)? class_interfaces
 class_interfaces: ("implements" classes)? class_throws
 class_throws: ("throws" classes)? class_body
-class_body: "{" (field | enum_class_elem | enum_field | method | comment)* "}"
+class_body: "{" (field | enum_class_elem | enum_field | method | comment_nouse)* "}"
 
 // Statement
 stmt: expr_stmt | compound_stmt
@@ -176,6 +176,7 @@ CLASS: "class"
 ENUM: "enum"
 INTERFACE: "interface"
 ANNO_INTERFACE: "@interface"
+!comment_nouse: comment (/\/\/.*/)+
 !comment: ("/**" | "/*" | comment_inline) (/\*(.+)?/)* "*/" | comment_inline
 comment_inline: /\/\*.+/
 return_type: generic_type class_name | class_type

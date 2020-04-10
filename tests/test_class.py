@@ -440,8 +440,9 @@ public class Application {
                     "assign": '"SOME_CONSTANT"',
                     "classType": "String",
                     "modifiers": ["private", "static", "final"],
+                    "comment": ["/** Another comment */"],
                     "type": "FIELD",
-                    "lineno": 19,
+                    "lineno": 18,
                     "linenoEnd": 19,
                 },
                 {
