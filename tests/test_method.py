@@ -5,7 +5,7 @@ from java_parser.annotation import AnnotationTransformer
 from java_parser.common import CommonTransformer
 
 
-class CompoundMethodTransformer(
+class TestMethodTransformer(
     CommonTransformer, AnnotationTransformer, MethodTransformer
 ):
     pass
@@ -21,7 +21,7 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("method").parse(text)
         print(tree)
-        result = CompoundMethodTransformer().transform(tree)
+        result = TestMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "main",
@@ -67,7 +67,7 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("method").parse(text)
         print(tree)
-        result = CompoundMethodTransformer().transform(tree)
+        result = TestMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "main",
@@ -99,7 +99,7 @@ class TestMethod(unittest.TestCase):
                     "lineno": 7,
                     "linenoEnd": 7,
                     "type": "ANNOTATION",
-                    "param": ['"something here"'],
+                    "args": ['"something here"'],
                 }
             ],
             "comment": [
@@ -127,7 +127,7 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("method").parse(text)
         print(tree)
-        result = CompoundMethodTransformer().transform(tree)
+        result = TestMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "ThisConstructor",
@@ -152,11 +152,150 @@ class TestMethod(unittest.TestCase):
                     "lineno": 5,
                     "linenoEnd": 5,
                     "type": "ANNOTATION",
-                    "param": [{"key": "Debug", "value": True}],
+                    "args": [{"key": "Debug", "value": True}],
                 }
             ],
             "comment": ["/**", "* This is a constructor.", "*/"],
             "lineno": 2,
             "linenoEnd": 8,
         }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_method_case4(self):
+
+        text = """
+        /**
+        * This is a constructor.
+        */
+        public ThisConstructor() throws Exception, Error;
+        """
+        tree = get_parser("method").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "ThisConstructor",
+            "throws": ["Exception", "Error"],
+            "type": "CONSTRUCTOR",
+            "modifiers": ["public"],
+            "comment": ["/**", "* This is a constructor.", "*/"],
+            "lineno": 2,
+            "linenoEnd": 5,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_parameter_case1(self):
+
+        text = """
+        String name
+        """
+        tree = get_parser("parameter").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {"name": "name", "classType": "String", "type": "PARAMETER"}
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_parameter_case2(self):
+
+        text = """
+        @FieldAnnotation String name
+        """
+        tree = get_parser("parameter").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "name",
+            "classType": "String",
+            "annotations": [
+                {
+                    "name": "FieldAnnotation",
+                    "lineno": 2,
+                    "linenoEnd": 2,
+                    "type": "ANNOTATION",
+                }
+            ],
+            "type": "PARAMETER",
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_parameter_case3(self):
+
+        text = """
+        String... args
+        """
+        tree = get_parser("parameter").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {"name": "args", "classType": "String...", "type": "PARAMETER"}
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_parameter_case4(self):
+
+        text = """
+        Class<?> anyClass
+        """
+        tree = get_parser("parameter").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "anyClass",
+            "classType": {"name": "Class", "generic": ["?"]},
+            "type": "PARAMETER",
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_parameter_case5(self):
+
+        text = """
+        String name, int age, Info info, String[] other
+        """
+        tree = get_parser("parameters").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = [
+            {"name": "name", "classType": "String", "type": "PARAMETER"},
+            {"name": "age", "classType": "int", "type": "PARAMETER"},
+            {"name": "info", "classType": "Info", "type": "PARAMETER"},
+            {
+                "name": "other",
+                "classType": {"name": "String", "arraySuffix": "[]"},
+                "type": "PARAMETER",
+            },
+        ]
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_parameter_case6(self):
+
+        text = """
+        @Input InputType in
+        """
+        tree = get_parser("parameter").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "in",
+            "classType": "InputType",
+            "annotations": [
+                {"name": "Input", "lineno": 2, "linenoEnd": 2, "type": "ANNOTATION"}
+            ],
+            "type": "PARAMETER",
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_return_type_case1(self):
+
+        text = """
+        <T> T
+        """
+        tree = get_parser("return_type").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {"generic": ["T"], "name": "T"}
         self.assertEqual(result, expected, "Not matched.")

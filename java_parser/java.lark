@@ -15,34 +15,28 @@
 modifiers: modifier+        -> list
 
 // Package
-package_stmt: "package" path ";"
+package_stmt: "package" path _SEMICOLOM
 
 // Import
 imports: import_stmt+
-import_stmt: "import" modifier? path ";"
+import_stmt: "import" modifier? path _SEMICOLOM
 
 // Annotation
-annotations: annotation+           -> list
-annotation: "@" name ("(" anno_params? ")")?
-anno_params: anno_param ("," anno_param)*
-?anno_param: anno_param_kv
-          | anno_param_kv_list
-          | anno_param_base
-?anno_param_base: annotation
-          | primary
-          | dotted_name
-          | name
-anno_param_kv: name "=" anno_param_base
-anno_param_kv_list: (name "=")? anno_param_list
-anno_param_list: "{" anno_param_base ("," anno_param_base)* "}"
+annotations: annotation+                                    -> list
+annotation: "@" name ("(" anno_args? ")")?
+anno_args: anno_arg_kv ("," anno_arg_kv)*                   -> list
+anno_arg_kv: (name "=")? anno_arg_list
+anno_arg_list: "{" anno_arg_base_list? "}" | anno_arg_base
+anno_arg_base_list: anno_arg_base ("," anno_arg_base)*      -> list
+?anno_arg_base: annotation | primary | dotted_name | name
 
 // Field
 fields: field+
-field: comment? field_annotation ";"
+field: comment? field_annotation _SEMICOLOM
 field_annotation: annotations? assign_modifier
 
 // Enum
-enum_class_elem: enum_elems ";"
+enum_class_elem: enum_elems _SEMICOLOM
 enum_field: comment? enum_field_modifiers
 enum_field_modifiers: modifiers? "enum" enum_field_name
 enum_field_name: name enum_field_body
@@ -57,10 +51,10 @@ enum_elem_body: ("{" method* "}")?
 method: comment? method_annotations
 method_annotations: annotations? method_modifiers
 method_modifiers: modifiers? method_return
-method_return: return_type? method_name
+method_return: (return_type " ")? method_name
 method_name: name method_parameters
 method_parameters: "(" parameters? ")" method_throws
-method_throws: ("throws" classes)? method_body
+method_throws: ("throws" classes)? (method_body | _SEMICOLOM)
 method_body: "{" suit? "}"
 classes: class_type ("," class_type)*   -> list
 
@@ -71,26 +65,26 @@ class_imports: imports? class_comment
 class_comment: comment? class_annotations
 class_annotations: annotations? class_modifier
 class_modifier: modifiers? class_identity
-class_identity: (CLASS | ENUM) class_identifier
+class_identity: (CLASS | ENUM | INTERFACE | ANNO_INTERFACE) class_identifier
 class_identifier: class_name class_extends
 class_extends: ("extends" classes)? class_interfaces
 class_interfaces: ("implements" classes)? class_throws
 class_throws: ("throws" classes)? class_body
-class_body: "{" (enum_class_elem| enum_field | field | method)* "}"
+class_body: "{" (field | enum_class_elem | enum_field | method | comment)* "}"
 
 // Statement
 stmt: expr_stmt | compound_stmt
 ?expr_stmt: simple_stmt | test_stmt
 simple_stmt: comment? simple_base
 ?simple_base: break_stmt | continue_stmt | return_stmt | throw_stmt
-test_stmt: comment? assign_modifier ";"
+test_stmt: comment? assign_modifier _SEMICOLOM
 ?assign_modifier: modifiers? assign_type
-?assign_type: class_type? assign_base
+?assign_type: (class_type " ")? assign_base
 assign_base: test "=" test | test 
-break_stmt: "break" ";"
-continue_stmt: "continue" ";"
-return_stmt: "return" test? ";"
-throw_stmt: "throw" test ";"
+break_stmt: "break" _SEMICOLOM
+continue_stmt: "continue" _SEMICOLOM
+return_stmt: "return" test? _SEMICOLOM
+throw_stmt: "throw" test _SEMICOLOM
 
 test_stmt_inline: comment? assign_modifier        -> test_stmt
 
@@ -107,7 +101,7 @@ do_while_stmt: "do" "{" suit? "}" "while" "(" test ")"
 while_stmt: "while" "(" test ")" "{" suit? "}"
 for_stmt: "for" "(" for_test ")" "{" suit? "}"
 for_test: test_stmt test ";" test                 -> for_loop_test
-         | class_type test ":" test               -> for_each_test
+         | class_type " " test ":" test           -> for_each_test
 switch_stmt: "switch" "(" test ")" case_stmts
 ?case_stmts: "{" case_suit* "}"                   -> list
 case_suit: case_key suit?
@@ -141,21 +135,25 @@ lambda_body: "{" suit? "}" | test_stmt_inline
 ?cast_expr: cast_type new_expr | new_expr
 ?new_expr: new atom_expr | atom_expr
 ?atom_expr: atom_expr "(" arguments? ")"          -> funccall
-          | atom_expr "[" number "]"              -> getitem
+          | atom_expr "[" test "]"                -> getitem
+          | atom_expr "{" arguments? "}"          -> arrayliteral
           | atom_expr "." name                    -> getattr
           | atom_expr chain_generic name          -> getattr
           | atom_expr _binary_op                  -> binary_af
           | atom
-?atom: primary
-     | class_type
-     | name
-     | "(" test ")"
+atom: primary                                     -> itself
+     | class_type                                 -> itself
+     | name                                       -> itself
+     | "(" test ")"                               -> itself
+     | "(" test_stmt_inline ")"                   -> test_stmt
+     | "{" arguments "}"                          -> itself
 ?chain_generic: "." generic_type
 ?class_type: class_ellipsis arr_suffix?
 ?class_ellipsis: class_generic ellipsis?
 ?class_generic: class_name generic_type?
-?generic_type: "<" class_type ("," class_type)* ">" | "<>"
-?cast_type: "(" class_type ")"
+generic_type: "<" (class_type_list | /\?/) ">" | /<>/
+class_type_list: class_type ("," class_type)*     -> list
+?cast_type: "(" class_type ")"                    -> itself
 arguments: argvalue ("," argvalue)*               -> list
 ?argvalue: test ("=" test)?
 
@@ -169,30 +167,40 @@ arguments: argvalue ("," argvalue)*               -> list
 
 // Parameter
 parameters: parameter ("," parameter)* -> list
-parameter: class_type name
+parameter: annotations? class_type name
 
 // Common
 _NEWLINE: NEWLINE
+_SEMICOLOM: ";"+
 CLASS: "class"
 ENUM: "enum"
-!comment: ("/**" | "/*") (/\*.+/)* "*/"
-?return_type: class_type
+INTERFACE: "interface"
+ANNO_INTERFACE: "@interface"
+!comment: ("/**" | "/*" | comment_inline) (/\*(.+)?/)* "*/" | comment_inline
+comment_inline: /\/\*.+/
+return_type: generic_type class_name | class_type
 path: name ("." (name | star))*    -> dotjoin
 name: CNAME                        -> literal
-class_name: UCASE_LETTER CNAME     -> concatjoin
+class_name: UCASE_LETTER CNAME?    -> concatjoin
           | primary_type           -> literal
 dotted_name: CNAME ("." CNAME)+    -> dotjoin
 star: /\*/                         -> literal
-primary: boolean | string | number | null
-string: ESCAPED_STRING
+primary: boolean                   -> itself
+       | string                    -> itself
+       | char                      -> itself
+       | number                    -> itself
+       | null                      -> itself
+string: ESCAPED_STRING             -> literal
+char: /'\w'/                       -> literal
 number: SIGNED_NUMBER
-boolean: true | false
+boolean: true            -> itself
+       | false           -> itself
 !true: "true"
 !false: "false"
 !null: "null"
 !new: "new"              -> literal
 !ellipsis: "..."         -> literal
-arr_suffix: /(\[\])+/
+arr_suffix: /(\[\])+/    -> literal
 !primary_type: "int"     -> literal
              | "long"    -> literal
              | "short"   -> literal
@@ -202,11 +210,11 @@ arr_suffix: /(\[\])+/
              | "byte"    -> literal
              | "boolean" -> literal
              | "void"    -> literal
+CNAME: /[a-zA-Z0-9亜-熙０-９_]+/
 
 // Import
 %import common.NEWLINE
 %import common.UCASE_LETTER
-%import common.CNAME
 %import common.ESCAPED_STRING
 %import common.SIGNED_NUMBER
 %import common.WS

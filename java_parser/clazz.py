@@ -80,9 +80,15 @@ class ClassTransformer(Transformer):
     def class_body(self, child, meta):
         result = {}
         fields = [
-            x for x in child if x["type"] in {"FIELD", "ENUM_FIELD", "ENUM_ELEMENTS"}
+            x
+            for x in child
+            if type(x) == dict and x["type"] in {"FIELD", "ENUM_FIELD", "ENUM_ELEMENTS"}
         ]
-        methods = [x for x in child if x["type"] in ("METHOD", "CONSTRUCTOR")]
+        methods = [
+            x
+            for x in child
+            if type(x) == dict and x["type"] in ("METHOD", "CONSTRUCTOR")
+        ]
         if len(fields) > 0:
             result["fields"] = fields
         if len(methods) > 0:

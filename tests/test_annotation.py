@@ -51,7 +51,7 @@ class TestAnnotation(unittest.TestCase):
             "lineno": 1,
             "linenoEnd": 1,
             "type": "ANNOTATION",
-            "param": ['"Literal"'],
+            "args": ['"Literal"'],
         }
         self.assertEqual(result, expected, "Not matched.")
 
@@ -67,7 +67,7 @@ class TestAnnotation(unittest.TestCase):
             "lineno": 1,
             "linenoEnd": 1,
             "type": "ANNOTATION",
-            "param": ['"Literal"', True, -1.0, "Name"],
+            "args": ['"Literal"', True, -1.0, "Name"],
         }
         self.assertEqual(result, expected, "Not matched.")
 
@@ -83,7 +83,7 @@ class TestAnnotation(unittest.TestCase):
             "lineno": 1,
             "linenoEnd": 1,
             "type": "ANNOTATION",
-            "param": [{"key": "<default>", "value": ["test"]}],
+            "args": [{"value": ["test"]}],
         }
         self.assertEqual(result, expected, "Not matched.")
 
@@ -99,9 +99,7 @@ class TestAnnotation(unittest.TestCase):
             "lineno": 1,
             "linenoEnd": 1,
             "type": "ANNOTATION",
-            "param": [
-                {"key": "<default>", "value": ["test", '"Literal"', False, 123.0]}
-            ],
+            "args": [{"value": ["test", '"Literal"', False, 123.0]}],
         }
         self.assertEqual(result, expected, "Not matched.")
 
@@ -117,7 +115,7 @@ class TestAnnotation(unittest.TestCase):
             "lineno": 1,
             "linenoEnd": 1,
             "type": "ANNOTATION",
-            "param": [
+            "args": [
                 {"key": "key1", "value": '"test"'},
                 {"key": "key2", "value": True},
                 {"key": "key3", "value": "Attribute"},
@@ -137,7 +135,7 @@ class TestAnnotation(unittest.TestCase):
             "lineno": 1,
             "linenoEnd": 1,
             "type": "ANNOTATION",
-            "param": [
+            "args": [
                 {
                     "key": "key1",
                     "value": {
@@ -145,7 +143,7 @@ class TestAnnotation(unittest.TestCase):
                         "lineno": 1,
                         "linenoEnd": 1,
                         "type": "ANNOTATION",
-                        "param": ["something"],
+                        "args": ["something"],
                     },
                 }
             ],
@@ -164,7 +162,7 @@ class TestAnnotation(unittest.TestCase):
             "lineno": 1,
             "linenoEnd": 1,
             "type": "ANNOTATION",
-            "param": [
+            "args": [
                 {"key": "Key", "value": ['"val1"', '"val2"']},
                 {"key": "Other", "value": "Parameter.another"},
             ],
@@ -183,7 +181,7 @@ class TestAnnotation(unittest.TestCase):
             "lineno": 1,
             "linenoEnd": 1,
             "type": "ANNOTATION",
-            "param": ['"/PATH"'],
+            "args": ['"/PATH"'],
         }
         self.assertEqual(result, expected, "Not matched.")
 
@@ -199,7 +197,7 @@ class TestAnnotation(unittest.TestCase):
             "lineno": 1,
             "linenoEnd": 1,
             "type": "ANNOTATION",
-            "param": [{"key": "<default>", "value": ["Target.class"]}],
+            "args": [{"value": ["Target.class"]}],
         }
         self.assertEqual(result, expected, "Not matched.")
 
@@ -223,7 +221,7 @@ class TestAnnotation(unittest.TestCase):
             "lineno": 1,
             "linenoEnd": 8,
             "type": "ANNOTATION",
-            "param": [
+            "args": [
                 {
                     "key": "includeFilters",
                     "value": {
@@ -231,7 +229,7 @@ class TestAnnotation(unittest.TestCase):
                         "lineno": 2,
                         "linenoEnd": 5,
                         "type": "ANNOTATION",
-                        "param": [
+                        "args": [
                             {"key": "type", "value": "FilterType.REGEX"},
                             {"key": "pattern", "value": '".*pattern"'},
                         ],
@@ -262,21 +260,21 @@ class TestAnnotation(unittest.TestCase):
                 "lineno": 3,
                 "linenoEnd": 3,
                 "type": "ANNOTATION",
-                "param": ["Value"],
+                "args": ["Value"],
             },
             {
                 "name": "MultiValues",
                 "lineno": 4,
                 "linenoEnd": 4,
                 "type": "ANNOTATION",
-                "param": [{"key": "value", "value": ["Value1", "value2"]}],
+                "args": [{"key": "value", "value": ["Value1", "value2"]}],
             },
             {
                 "name": "ListValues",
                 "lineno": 5,
                 "linenoEnd": 5,
                 "type": "ANNOTATION",
-                "param": ["Value1", "Value2"],
+                "args": ["Value1", "Value2"],
             },
         ]
         self.assertEqual(result, expected, "Not matched.")
@@ -303,56 +301,100 @@ class TestAnnotation(unittest.TestCase):
                 "lineno": 2,
                 "linenoEnd": 2,
                 "type": "ANNOTATION",
-                "param": ['"string"'],
+                "args": ['"string"'],
             },
             {
                 "name": "Literal2",
                 "lineno": 3,
                 "linenoEnd": 3,
                 "type": "ANNOTATION",
-                "param": ['"string"', '"another"'],
+                "args": ['"string"', '"another"'],
             },
             {
                 "name": "Literal3",
                 "lineno": 4,
                 "linenoEnd": 4,
                 "type": "ANNOTATION",
-                "param": [123.0],
+                "args": [123.0],
             },
             {
                 "name": "Literal4",
                 "lineno": 5,
                 "linenoEnd": 5,
                 "type": "ANNOTATION",
-                "param": [123.0, 456.0],
+                "args": [123.0, 456.0],
             },
             {
                 "name": "Literal5",
                 "lineno": 6,
                 "linenoEnd": 6,
                 "type": "ANNOTATION",
-                "param": [1.1],
+                "args": [1.1],
             },
             {
                 "name": "Literal6",
                 "lineno": 7,
                 "linenoEnd": 7,
                 "type": "ANNOTATION",
-                "param": [1.1, 9.9],
+                "args": [1.1, 9.9],
             },
             {
                 "name": "Literal7",
                 "lineno": 8,
                 "linenoEnd": 8,
                 "type": "ANNOTATION",
-                "param": [True],
+                "args": [True],
             },
             {
                 "name": "Literal8",
                 "lineno": 9,
                 "linenoEnd": 9,
                 "type": "ANNOTATION",
-                "param": [False, True],
+                "args": [False, True],
             },
         ]
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_annotation_case15(self):
+
+        text = """
+        @EmptyList(@Another(ok))
+        """
+        tree = get_parser("annotation").parse(text)
+        print(tree)
+        result = TestAnnotationTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "EmptyList",
+            "lineno": 2,
+            "linenoEnd": 2,
+            "type": "ANNOTATION",
+            "args": [
+                {
+                    "name": "Another",
+                    "lineno": 2,
+                    "linenoEnd": 2,
+                    "type": "ANNOTATION",
+                    "args": ["ok"],
+                }
+            ],
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_annotation_case16(self):
+
+        text = """
+        @EmptyList({})
+        """
+        tree = get_parser("annotation").parse(text)
+        print(tree)
+        result = TestAnnotationTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "EmptyList",
+            "lineno": 2,
+            "linenoEnd": 2,
+            "type": "ANNOTATION",
+            "args": ["{}"],
+        }
         self.assertEqual(result, expected, "Not matched.")

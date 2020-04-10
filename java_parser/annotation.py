@@ -8,48 +8,33 @@ from lark import Transformer, v_args
 @v_args(meta=True)
 class AnnotationTransformer(Transformer):
     def annotation(self, child, meta):
-
-        value = child[0]
-
         result = {
-            "name": value,
+            "name": child[0],
             "lineno": meta.line,
             "linenoEnd": meta.end_line,
             "type": "ANNOTATION",
         }
-
         if len(child) == 2:
-            result["param"] = child[1]
-
+            result["args"] = child[1]
         return result
 
-    def anno_param_kv(self, child, _):
-        key, value = (child[0], child[1])
-        return {
-            "key": key,
-            "value": value,
-        }
-
-    def anno_param_kv_list(self, child, _):
+    def anno_arg_kv(self, child, _):
         if len(child) == 1:
-            key = "<default>"
-            value = child[0]
+            result = child[0]
         else:
-            key, value = (child[0], child[1])
-        return {
-            "key": key,
-            "value": value,
-        }
+            value = child[1]
+            if type(value) != dict or (
+                "type" in value and value["type"] == "ANNOTATION"
+            ):
+                value = {"value": value}
+            result = {"key": child[0], **value}
+        return result
 
-    def anno_param_base(self, child, _):
-        (child,) = child
-        return child
-
-    def anno_param_list(self, child, _):
-        return child
-
-    def anno_params(self, child, _):
-        return child
-
-    def anno_param(self, child, _):
-        return child
+    def anno_arg_list(self, child, _):
+        result = "{}"
+        if len(child) == 1:
+            if type(child[0]) == list:
+                result = {"value": child[0]}
+            else:
+                result = child[0]
+        return result

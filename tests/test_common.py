@@ -1,6 +1,11 @@
 import unittest
 from tests.helper import get_parser
 from java_parser.common import CommonTransformer
+from java_parser.method import MethodTransformer
+
+
+class TestCommonTransformer(CommonTransformer, MethodTransformer):
+    pass
 
 
 class TestCommon(unittest.TestCase):
@@ -147,6 +152,16 @@ class TestCommon(unittest.TestCase):
         expected = 999
         self.assertEqual(result, expected, "Not matched.")
 
+    def test_primary_case8(self):
+
+        text = "'S'"
+        tree = get_parser("primary").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = "'S'"
+        self.assertEqual(result, expected, "Not matched.")
+
     def test_comment_case1(self):
 
         text = """
@@ -162,57 +177,45 @@ class TestCommon(unittest.TestCase):
         expected = ["/**", "* Test comment", "* Comment end.", "*/"]
         self.assertEqual(result, expected, "Not matched.")
 
-    # def test_comment_case2(self):
+    def test_comment_case2(self):
 
-    #     text = """
-    #     /**
-    #      Test comment
-    #      Comment end.
-    #     */
-    #     """
-    #     tree = get_parser("comment").parse(text)
-    #     print(tree)
-    #     result = CommonTransformer().transform(tree)
-    #     print(result)
-    #     expected = ["/**", "Test comment", "Comment end.", "*/"]
-    #     self.assertEqual(result, expected, "Not matched.")
+        text = """
+        /**
+        * Test comment
+        *
+        * Comment end.
+        */
+        """
+        tree = get_parser("comment").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = ["/**", "* Test comment", "*", "* Comment end.", "*/"]
+        self.assertEqual(result, expected, "Not matched.")
 
-    # def test_comment_case3(self):
+    def test_comment_case3(self):
 
-    #     text = """
-    #     /*
-    #      Test comment
-    #      Comment end.
-    #     */
-    #     """
-    #     tree = get_parser("comment").parse(text)
-    #     print(tree)
-    #     result = CommonTransformer().transform(tree)
-    #     print(result)
-    #     expected = ["/*", "Test comment", "Comment end.", "*/"]
-    #     self.assertEqual(result, expected, "Not matched.")
+        text = """
+        /** Inline Comment */
+        """
+        tree = get_parser("comment").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = ["/** Inline Comment */"]
+        self.assertEqual(result, expected, "Not matched.")
 
-    # def test_comment_case4(self):
+    def test_comment_case4(self):
 
-    #     text = """
-    #     /*
-    #      Test comment
-    #      Comment end.
-    #     */
-
-    #     someThingHere();
-
-    #     /*
-    #      Another comment
-    #      Comment end.
-    #     */
-    #     """
-    #     tree = get_parser("comment").parse(text)
-    #     print(tree)
-    #     result = CommonTransformer().transform(tree)
-    #     print(result)
-    #     expected = ["/*", "Test comment", "Comment end.", "*/"]
-    #     self.assertEqual(result, expected, "Not matched.")
+        text = """
+        /** 漢字コメント */
+        """
+        tree = get_parser("comment").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = ["/** 漢字コメント */"]
+        self.assertEqual(result, expected, "Not matched.")
 
     def test_arguments_case1(self):
 
@@ -228,8 +231,8 @@ class TestCommon(unittest.TestCase):
                 "ifFalse": "ng",
                 "type": "TERNARY_EXPRESSION",
             },
-            {"name": "abc.arg2", "args": ["test", "arg3"], "type": "INVOCATION"},
-            "item[0]",
+            {"name": "abc.arg2", "type": "INVOCATION", "args": ["test", "arg3"]},
+            {"name": "item", "index": 0.0, "type": "ARRAY_OPERATION"},
             "name.attribute",
         ]
         self.assertEqual(result, expected, "Not matched.")
@@ -456,7 +459,12 @@ class TestCommon(unittest.TestCase):
         print(tree)
         result = CommonTransformer().transform(tree)
         print(result)
-        expected = [{"value": "String[0]", "type": "NEW_EXPRESSION"}]
+        expected = [
+            {
+                "value": {"name": "String", "index": 0.0, "type": "ARRAY_OPERATION"},
+                "type": "NEW_EXPRESSION",
+            }
+        ]
         self.assertEqual(result, expected, "Not matched.")
 
     def test_arguments_case13(self):
@@ -489,7 +497,7 @@ class TestCommon(unittest.TestCase):
         expected = {"name": "args", "classType": "Object...", "type": "PARAMETER"}
         self.assertEqual(result, expected, "Not matched.")
 
-    def test_parameters_case1(self):
+    def test_parameters_case2(self):
 
         text = "Map<String, Map<String, String>> map"
         tree = get_parser("parameter").parse(text)
@@ -607,7 +615,14 @@ class TestCommon(unittest.TestCase):
         print(tree)
         result = CommonTransformer().transform(tree)
         print(result)
-        expected = {"name": "array[1].name", "type": "INVOCATION"}
+        expected = {
+            "name": {
+                "base": {"name": "array", "index": 1.0, "type": "ARRAY_OPERATION"},
+                "name": "name",
+                "type": "ATTRIBUTE",
+            },
+            "type": "INVOCATION",
+        }
         self.assertEqual(result, expected, "Not matched.")
 
     def test_test_case7(self):
@@ -752,4 +767,62 @@ class TestCommon(unittest.TestCase):
         result = CommonTransformer().transform(tree)
         print(result)
         expected = {"left": "con1", "right": ["con2"], "type": "TEST_AND"}
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_test_case16(self):
+
+        text = "漢字名"
+        tree = get_parser("test").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = "漢字名"
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_test_case17(self):
+
+        text = "list[i]"
+        tree = get_parser("test").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = {"name": "list", "index": "i", "type": "ARRAY_OPERATION"}
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_test_case18(self):
+
+        text = "list[i + 1]"
+        tree = get_parser("test").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "list",
+            "index": {
+                "left": "i",
+                "chain": [{"value": 1.0, "operator": "+"}],
+                "type": "ARITHMETIC_EXPRESSION",
+            },
+            "type": "ARRAY_OPERATION",
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_test_case19(self):
+
+        text = "(line = reader.readLine()) != null"
+        tree = get_parser("test").parse(text)
+        print(tree)
+        result = TestCommonTransformer().transform(tree)
+        print(result)
+        expected = {
+            "left": {
+                "name": "line",
+                "assign": {"name": "reader.readLine", "type": "INVOCATION"},
+                "type": "STATEMENT",
+                "lineno": 1,
+                "linenoEnd": 1,
+            },
+            "chain": [{"value": None, "operator": "!="}],
+            "type": "COMPARISON",
+        }
         self.assertEqual(result, expected, "Not matched.")

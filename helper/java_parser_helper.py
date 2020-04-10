@@ -4,31 +4,41 @@ Java parser entry.
 
 import re
 import json
+import yaml
 import hashlib
 import datetime
 import time
 import logging
 
+from functools import wraps
 from pathlib import Path
 from lark.exceptions import UnexpectedInput
-from java_parser import create_parser
-from helper.io_helper import save_to_file
+from java_parser import create_parser, JavaTransformer
+from helper.io_helper import save_to_file, search_files
 
 __version__ = "0.2.1"
 __author__ = "Richard Zeng"
 
+IGNORE_LIST = [".git", "package-info.java"]
+
 md5 = hashlib.md5()
 logger = logging.getLogger("parser")
+logger.setLevel(logging.DEBUG)
+logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger.addHandler(logging.StreamHandler())
 
 
 def log(message):
     """Logger"""
 
     def decorator_log(func):
-        @functools.wraps(func)
+        @wraps(func)
         def wrapper(*args, **kwargs):
             # Logging
-            logger.info(message, *args[1:], kwargs if kwargs else "")
+            m = " ".join(
+                [str(x) for x in [message, *args[1:], kwargs if kwargs else ""]]
+            )
+            logger.info(m)
             # Perform func
             return func(*args, **kwargs)
 
@@ -50,15 +60,24 @@ class JavaParser:
         self._output = None
         self._parsed = None
         self._destination = None
+        self._target_dir = None
         self._error = None
         self._encoding = "utf-8"
         self._force_parse = False
         self._skip_condition = "md5"
+        self._fileformat = "json"
 
-    def hasError(self):
-        """Check error"""
+    @property
+    def fileformat(self):
+        """File format"""
 
-        return False if self._error is None else True
+        return self._fileformat
+
+    @fileformat.setter
+    def fileformat(self, format):
+        """Set file format, `json` by default"""
+
+        self._fileformat = format
 
     @property
     def force_parse(self):
@@ -97,13 +116,29 @@ class JavaParser:
         self._encoding = encoding
 
     @property
+    def target_dir(self):
+        """Get target directory directory"""
+
+        return self._target_dir
+
+    @target_dir.setter
+    @log("Set target directory: ")
+    def target_dir(self, target_dir):
+        """Set target directory directory"""
+
+        path = Path(target_dir)
+        if not path.exists():
+            raise IOError("Target directory does not exist!")
+        self._target_dir = target_dir
+
+    @property
     def destination(self):
-        """Set destination directory"""
+        """Get destination directory"""
 
         return self._destination
 
     @destination.setter
-    @log("Set destination directory to")
+    @log("Set destination directory: ")
     def destination(self, destination):
         """Set destination directory"""
 
@@ -116,41 +151,23 @@ class JavaParser:
         except:
             self._destination = None
 
-    @log("Parsed!")
-    def after(self):
-        """Do something after parsing"""
-
-        output = self._output
-
-        # Save to file if destination exists
-        if self.destination:
-            path = Path(self.destination)
-            # Save to file
-            self.to_file(path.joinpath(f'{output["fullName"]}.json'))
-            if not self._parsed:
-                self._parsed = []
-            self._parsed.append(output["fileName"])
-
-        # Cleanup
-        self.cleanup()
-
-        return output
-
     @log("Save to file...\n")
     def to_file(self, filename):
         """Save output to file"""
 
-        output = json.dumps(self._output, indent=2, ensure_ascii=False, sort_keys=True)
+        output = []
 
-        save_to_file(filename, output)
+        if self._fileformat in ("yaml", "yml"):
+            output.append(yaml.dump(self._output, default_flow_style=False))
+        if self._fileformat in ("json"):
+            output.append(
+                json.dumps(self._output, indent=2, ensure_ascii=False, sort_keys=True)
+            )
 
-    @log("Memory cleared! Ready for next parsing.")
-    def cleanup(self):
-        """Clear memory"""
+        for o in output:
+            save_to_file(filename, o)
 
-        self._output = None
-
-    @log("Error occurred!\n")
+    @log("\nError occurred")
     def error(self, error, message, filename):
         """Print error and return false"""
 
@@ -173,12 +190,12 @@ class JavaParser:
         failed = len(self._error) if self._error is not None else 0
         skip = self._skip
         success = count - failed - skip
-        report = f"Total parsed: {count}\n"
+        report = "\n"
+        report += f"Total parsed: {count}\n"
         report += f"Complete: {success}\n"
         report += f"Skipped: {skip}\n"
         report += f"Failed: {failed}\n"
-        report += f"Finished time: {datetime.datetime.now()}\n"
-        report += "\n"
+        report += f"Finished time: {datetime.datetime.now()}"
 
         timestamp = time.time()
 
@@ -211,11 +228,11 @@ class JavaParser:
 
         return self.report(report)
 
-    @log("Report:\n")
+    @log("\nReport:\n")
     def report(self, *message):
         pass
 
-    @log("Skipped:\n")
+    @log("Skipped:")
     def skip(self, *message):
         self._skip += 1
 
@@ -258,11 +275,11 @@ class JavaParser:
 
         return False
 
-    def parse(self, filename, comment=True):
+    def parse(self, filename):
 
         try:
 
-            self._parse(filename, encoding=self._encoding, comment=comment)
+            self._parse(filename, encoding=self._encoding)
 
         except UnicodeDecodeError:
 
@@ -272,7 +289,7 @@ class JavaParser:
                 encoding = self._encoding
                 self._encoding = "utf-8"
                 # Try again
-                self.parse(filename, comment)
+                self.parse(filename)
                 # Recover encoding
                 self._encoding = encoding
 
@@ -282,7 +299,7 @@ class JavaParser:
             raise identifier
 
     @log("Parsing...\n")
-    def _parse(self, filename, encoding="utf-8", comment=True):
+    def _parse(self, filename, encoding="utf-8"):
         """Parse target"""
 
         # Update count
@@ -306,23 +323,80 @@ class JavaParser:
 
             try:
                 # Parsing
-                result = self._parser.parse(target)
+                tree = self._parser.parse(target)
             except UnexpectedInput as identifier:
-                return self.error(identifier, "SyntaxError", filename)
+                # try:
+                #     # Try fix comment with star prefix and parse
+                #     tree = self._parser.parse(target)
+                # except UnexpectedInput as identifier:
+                #     # Nothing can do, write error log
+                #    return self.error(identifier, "SyntaxError", filename)
+                return self.error(identifier, "ParseError", filename)
             except Exception as identifier:
                 return self.error(identifier, "Exception", filename)
 
         # Make output object, in dict
-        output = result.object()
+        output = JavaTransformer().transform(tree)
         # Add some additional info
         output["version"] = __version__
         output["md5"] = digest
         output["fileName"] = str(filename.absolute())
+        output["fullName"] = ".".join([output["package"]["value"], output["name"]])
 
-        # Set output
+        # Set output for save to file
         self._output = output
 
-        return self.after()
+        # Save to file if destination exists
+        if self._destination:
+            path = Path(self._destination)
+            # Save to file
+            if self._fileformat == "both":
+                fn = path.joinpath(output["fullName"] + ".json")
+                self.to_file(fn)
+                fn = path.joinpath(output["fullName"] + ".yml")
+                self.to_file(fn)
+            else:
+                fn = path.joinpath(output["fullName"] + "." + self._fileformat)
+                self.to_file(fn)
+            if not self._parsed:
+                self._parsed = []
+            self._parsed.append(output["fileName"])
+
+        # Cleanup
+        self._output = None
+
+        return output
+
+    def search_and_parse(self, ignore_list=[]):
+        """Search for parse"""
+
+        if not self._target_dir:
+            raise IOError("Target directory is not specified!")
+        if not self._destination:
+            raise IOError("Destination directory is not specified!")
+
+        parse_targets = Path(self._destination).joinpath("parse_target_list.txt")
+        ignore_list = IGNORE_LIST + ignore_list
+
+        with open(parse_targets, "w") as f:
+
+            def writer(message):
+                f.write(message)
+                f.write("\n")
+
+            search_files(
+                target_dir=self._target_dir,
+                suffix=".java",
+                writer=writer,
+                ingore_list=ignore_list,
+            )
+
+        with open(parse_targets, "r") as f:
+            for line in f:
+                if line.strip():
+                    self.parse(Path(line.strip()))
+
+        self.finish()
 
 
 if __name__ == "__main__":

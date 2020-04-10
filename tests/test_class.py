@@ -104,7 +104,7 @@ public class HelloController {
                             "lineno": 25,
                             "linenoEnd": 25,
                             "type": "ANNOTATION",
-                            "param": ['"/"'],
+                            "args": ['"/"'],
                         }
                     ],
                     "comment": ["/*", "* Method comment here.", "*/"],
@@ -352,6 +352,148 @@ public class Application {
             ],
             "lineno": 12,
             "linenoEnd": 37,
+            "imports": [
+                {
+                    "value": "java.util.Arrays",
+                    "type": "IMPORT",
+                    "lineno": 4,
+                    "linenoEnd": 4,
+                },
+                {
+                    "value": "org.springframework.boot.CommandLineRunner",
+                    "type": "IMPORT",
+                    "lineno": 6,
+                    "linenoEnd": 6,
+                },
+                {
+                    "value": "org.springframework.boot.SpringApplication",
+                    "type": "IMPORT",
+                    "lineno": 7,
+                    "linenoEnd": 7,
+                },
+                {
+                    "value": "org.springframework.boot.autoconfigure.SpringBootApplication",
+                    "type": "IMPORT",
+                    "lineno": 8,
+                    "linenoEnd": 8,
+                },
+                {
+                    "value": "org.springframework.context.ApplicationContext",
+                    "type": "IMPORT",
+                    "lineno": 9,
+                    "linenoEnd": 9,
+                },
+                {
+                    "value": "org.springframework.context.annotation.Bean",
+                    "type": "IMPORT",
+                    "lineno": 10,
+                    "linenoEnd": 10,
+                },
+            ],
+            "package": {
+                "value": "com.example.springboot",
+                "type": "PACKAGE",
+                "lineno": 2,
+                "linenoEnd": 2,
+            },
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_class_case3(self):
+
+        text = """
+package com.example.springboot;
+
+import java.util.Arrays;
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class Application {
+
+    /** Inline comment */
+    // private static final String NO_NEED = "SOMETHING NOT NEEDED";
+
+    /** Another comment */
+	private static final String SOME_CONSTANT = "SOME_CONSTANT";
+	private static final int INT_CONSTANT = "123";
+
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
+	}
+}
+        """
+        tree = get_parser("clazz").parse(text)
+        print(tree)
+        result = TestClassTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "CLASS",
+            "name": "Application",
+            "fields": [
+                {
+                    "name": "SOME_CONSTANT",
+                    "assign": '"SOME_CONSTANT"',
+                    "classType": "String",
+                    "modifiers": ["private", "static", "final"],
+                    "type": "FIELD",
+                    "lineno": 19,
+                    "linenoEnd": 19,
+                },
+                {
+                    "name": "INT_CONSTANT",
+                    "assign": '"123"',
+                    "classType": "int",
+                    "modifiers": ["private", "static", "final"],
+                    "type": "FIELD",
+                    "lineno": 20,
+                    "linenoEnd": 20,
+                },
+            ],
+            "methods": [
+                {
+                    "name": "main",
+                    "body": [
+                        {
+                            "body": {
+                                "name": "SpringApplication.run",
+                                "type": "INVOCATION",
+                                "args": ["Application.class", "args"],
+                            },
+                            "type": "STATEMENT",
+                            "lineno": 23,
+                            "linenoEnd": 23,
+                        }
+                    ],
+                    "parameters": [
+                        {
+                            "name": "args",
+                            "classType": {"name": "String", "arraySuffix": "[]"},
+                            "type": "PARAMETER",
+                        }
+                    ],
+                    "returnType": "void",
+                    "type": "METHOD",
+                    "modifiers": ["public", "static"],
+                    "lineno": 22,
+                    "linenoEnd": 24,
+                }
+            ],
+            "modifiers": ["public"],
+            "annotations": [
+                {
+                    "name": "SpringBootApplication",
+                    "lineno": 12,
+                    "linenoEnd": 12,
+                    "type": "ANNOTATION",
+                }
+            ],
+            "lineno": 12,
+            "linenoEnd": 25,
             "imports": [
                 {
                     "value": "java.util.Arrays",

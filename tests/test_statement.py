@@ -1,10 +1,11 @@
 import unittest
 from tests.helper import get_parser
+from java_parser.enum import EnumTransformer
 from java_parser.method import MethodTransformer
 from java_parser.common import CommonTransformer
 
 
-class TestMethodTransformer(CommonTransformer, MethodTransformer):
+class TestMethodTransformer(CommonTransformer, MethodTransformer, EnumTransformer):
     pass
 
 
@@ -144,13 +145,13 @@ class TestStatement(unittest.TestCase):
         result = TestMethodTransformer().transform(tree)
         print(result)
         expected = {
-            "classType": "String",
             "name": "name",
             "assign": {
                 "value": "SomeVariable.attribute",
-                "cast": {"name": "ArrayList", "generic": "String"},
+                "cast": {"name": "ArrayList", "generic": ["String"]},
                 "type": "CAST_EXPRESSION",
             },
+            "classType": "String",
             "type": "STATEMENT",
             "lineno": 1,
             "linenoEnd": 1,
@@ -254,6 +255,26 @@ class TestStatement(unittest.TestCase):
                 },
                 "cast": "SomeType",
                 "type": "CAST_EXPRESSION",
+            },
+            "type": "STATEMENT",
+            "lineno": 1,
+            "linenoEnd": 1,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case14(self):
+
+        text = "object = factory.makeObject(param);"
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "object",
+            "assign": {
+                "name": "factory.makeObject",
+                "type": "INVOCATION",
+                "args": ["param"],
             },
             "type": "STATEMENT",
             "lineno": 1,
@@ -902,6 +923,39 @@ class TestStatement(unittest.TestCase):
                         }
                     ],
                 },
+            ],
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_if_case6(self):
+
+        text = """
+        if (!object.equals(another.CONSTANT_VARIABLE)) {
+            something();
+        }"""
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "IF",
+            "test": {
+                "value": {
+                    "name": "object.equals",
+                    "type": "INVOCATION",
+                    "args": ["another.CONSTANT_VARIABLE"],
+                },
+                "type": "TEST_NOT",
+            },
+            "lineno": 2,
+            "linenoEnd": 4,
+            "body": [
+                {
+                    "body": {"name": "something", "type": "INVOCATION"},
+                    "type": "STATEMENT",
+                    "lineno": 3,
+                    "linenoEnd": 3,
+                }
             ],
         }
         self.assertEqual(result, expected, "Not matched.")
@@ -2029,5 +2083,54 @@ class TestStatement(unittest.TestCase):
             "lineno": 2,
             "linenoEnd": 2,
         }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_list_literal_case1(self):
+
+        text = "String[] list = {STR_1, STR_2, STR_3};"
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "list",
+            "assign": ["STR_1", "STR_2", "STR_3"],
+            "classType": {"name": "String", "arraySuffix": "[]"},
+            "type": "STATEMENT",
+            "lineno": 1,
+            "linenoEnd": 1,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_list_literal_case2(self):
+
+        text = "new String[]{STR_1, STR_2, STR_3};"
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "body": {
+                "value": {
+                    "name": {"name": "String", "arraySuffix": "[]"},
+                    "type": "ARRAY_LITERAL",
+                    "value": ["STR_1", "STR_2", "STR_3"],
+                },
+                "type": "NEW_EXPRESSION",
+            },
+            "type": "STATEMENT",
+            "lineno": 1,
+            "linenoEnd": 1,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_special_case1(self):
+
+        text = "name;;"
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = TestMethodTransformer().transform(tree)
+        print(result)
+        expected = {"body": "name", "type": "STATEMENT", "lineno": 1, "linenoEnd": 1}
         self.assertEqual(result, expected, "Not matched.")
 

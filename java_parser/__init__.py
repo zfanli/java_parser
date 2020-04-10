@@ -33,7 +33,7 @@ def create_parser(parser="earley"):
         "java_parser/java.lark",
         parser=parser,
         propagate_positions=True,
-        transformer=JavaTransformer,
+        # transformer=JavaTransformer,
         start="clazz",
         debug=False,
     )

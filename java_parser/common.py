@@ -23,6 +23,9 @@ class CommonTransformer(Transformer):
         (child,) = child
         return str(child)
 
+    def itself(self, child, _):
+        return child[0]
+
     def ellipsis(self, _, __):
         return "..."
 
@@ -47,9 +50,8 @@ class CommonTransformer(Transformer):
     def comment(self, child, _):
         return [str(x) for x in child]
 
-    def boolean(self, child, _):
-        (child,) = child
-        return child
+    def comment_inline(self, child, _):
+        return str(child[0])
 
     def number(self, child, _):
         (child,) = child
@@ -59,19 +61,10 @@ class CommonTransformer(Transformer):
         (child,) = child
         return child.replace('\\"', '"')
 
-    def primary(self, child, _):
-        (child,) = child
-        return child
-
-    def cast_type(self, child, _):
-        (child,) = child
-        return child
-
     def generic_type(self, child, _):
-
-        if len(child) == 0:
-            child = ["<>"]
-
+        (child,) = child
+        if type(child) != list:
+            child = [str(child)]
         return child
 
     def class_type(self, child, _):
@@ -104,17 +97,13 @@ class CommonTransformer(Transformer):
 
         return result
 
-    def arr_suffix(self, child, _):
-        (child,) = child
-        return str(child)
-
     def getattr(self, child, _):
         if len(child) == 2:
             base = child[0]
             name = child[1]
         else:
             base = child[0]
-            name = f"<{child[1]}> {child[2]}"
+            name = f"<{','.join(child[1])}> {child[2]}"
 
         if type(base) == str:
             result = ".".join([base, name])
@@ -123,14 +112,21 @@ class CommonTransformer(Transformer):
         return result
 
     def getitem(self, child, _):
-        (name, index) = child
-        return f"{name}[{int(index)}]"
+        return {"name": child[0], "index": child[1], "type": "ARRAY_OPERATION"}
 
-    def funccall(self, child, meta):
+    def funccall(self, child, _):
 
         result = {"name": child[0], "type": "INVOCATION"}
         if len(child) == 2:
             result["args"] = child[1]
+
+        return result
+
+    def arrayliteral(self, child, _):
+
+        result = {"name": child[0], "type": "ARRAY_LITERAL"}
+        if len(child) == 2:
+            result["value"] = child[1]
 
         return result
 
@@ -263,9 +259,15 @@ class CommonTransformer(Transformer):
         return result
 
     def parameter(self, child, _):
-        class_type = child[0]
-        name = child[1]
-        result = {"name": name, "classType": class_type, "type": "PARAMETER"}
+        if len(child) == 2:
+            result = {"name": child[1], "classType": child[0], "type": "PARAMETER"}
+        else:
+            result = {
+                "name": child[2],
+                "classType": child[1],
+                "annotations": child[0],
+                "type": "PARAMETER",
+            }
         return result
 
     def factor(self, child, _):
@@ -328,4 +330,11 @@ class CommonTransformer(Transformer):
             if type(body) == dict:
                 body = [body]
             result = {"body": body}
+        return result
+
+    def return_type(self, child, _):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            result = {"generic": child[0], "name": child[1]}
         return result

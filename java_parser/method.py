@@ -274,10 +274,12 @@ class MethodTransformer(Transformer):
         return result
 
     def method_throws(self, child, meta):
-        if len(child) == 1:
-            result = child[0]
-        else:
-            result = {**child[1], "throws": child[0]}
+        result = {}
+        for x in child:
+            if type(x) == list:
+                result["throws"] = x
+            else:
+                result = {**result, **x}
         return result
 
     def method_body(self, child, meta):
