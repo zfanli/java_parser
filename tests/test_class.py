@@ -1134,3 +1134,121 @@ public abstract class TestAbstract extends ClassType1, ClassType2
             },
         }
         self.assertEqual(result, expected, "Not matched.")
+
+    def test_class_case10(self):
+
+        text = """
+package com.example.springboot;
+
+import java.util.Arrays;
+
+public class TestClass {
+
+    private String someField = "Field";
+
+    static {
+        arr[index + 1] = someValue;
+    }
+
+    {
+        doSomething();
+    }
+
+    public String someMethod(String str) {
+        return str;
+    }
+}
+        """
+        tree = get_parser("clazz").parse(text)
+        print(tree)
+        result = CompoundClassTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "CLASS",
+            "name": "TestClass",
+            "fields": [
+                {
+                    "name": "someField",
+                    "assign": '"Field"',
+                    "operator": "=",
+                    "type": "FIELD",
+                    "classType": "String",
+                    "modifiers": ["private"],
+                    "lineno": 8,
+                    "linenoEnd": 8,
+                }
+            ],
+            "methods": [
+                {
+                    "name": "someMethod",
+                    "body": [
+                        {"body": "str", "type": "RETURN", "lineno": 19, "linenoEnd": 19}
+                    ],
+                    "parameters": [
+                        {"name": "str", "classType": "String", "type": "PARAMETER"}
+                    ],
+                    "returnType": "String",
+                    "type": "METHOD",
+                    "modifiers": ["public"],
+                    "lineno": 18,
+                    "linenoEnd": 20,
+                }
+            ],
+            "blocks": [
+                {
+                    "body": [
+                        {
+                            "type": "ASSIGNMENT",
+                            "name": {
+                                "name": "arr",
+                                "index": {
+                                    "left": "index",
+                                    "chain": [{"value": 1, "operator": "+"}],
+                                    "type": "ARITHMETIC_EXPRESSION",
+                                },
+                                "type": "ARRAY_OPERATION",
+                            },
+                            "assign": "someValue",
+                            "operator": "=",
+                            "lineno": 11,
+                            "linenoEnd": 11,
+                        }
+                    ],
+                    "modifiers": ["static"],
+                    "type": "STATIC_BLOCK",
+                    "lineno": 10,
+                    "linenoEnd": 12,
+                },
+                {
+                    "body": [
+                        {
+                            "type": "INVOCATION",
+                            "name": "doSomething",
+                            "lineno": 15,
+                            "linenoEnd": 15,
+                        }
+                    ],
+                    "type": "BLOCK",
+                    "lineno": 14,
+                    "linenoEnd": 16,
+                },
+            ],
+            "modifiers": ["public"],
+            "lineno": 6,
+            "linenoEnd": 21,
+            "imports": [
+                {
+                    "value": "java.util.Arrays",
+                    "type": "IMPORT",
+                    "lineno": 4,
+                    "linenoEnd": 4,
+                }
+            ],
+            "package": {
+                "value": "com.example.springboot",
+                "type": "PACKAGE",
+                "lineno": 2,
+                "linenoEnd": 2,
+            },
+        }
+        self.assertEqual(result, expected, "Not matched.")

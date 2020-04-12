@@ -1,3 +1,4 @@
 lark-parser
+pyyaml
 pytest
 pytest-cov

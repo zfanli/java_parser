@@ -294,15 +294,23 @@ class MethodTransformer(Transformer):
             result["body"] = child[0]
         return result
 
-    def static_block(self, child, meta):
+    def block_modifier(self, child, meta):
+        result = {"type": "BLOCK"}
+        if len(child) == 1:
+            result = {**child[0], **result}
+        if len(child) == 2:
+            result = {**child[1], "modifiers": child[0], **result}
+            if "static" in child[0]:
+                result["type"] = "STATIC_BLOCK"
+        return result
+
+    def block(self, child, meta):
         result = {
-            "type": "STATIC_BLOCK",
             "lineno": meta.line,
             "linenoEnd": meta.end_line,
         }
         if len(child) == 1:
-            result["body"] = child[0]
+            result = {**child[0], **result}
         if len(child) == 2:
-            result["body"] = child[1]
-            result["comment"] = child[0]
+            result = {**child[1], "comment": child[0], **result}
         return result

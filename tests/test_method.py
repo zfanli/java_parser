@@ -193,31 +193,56 @@ class TestMethod(unittest.TestCase):
         }
         self.assertEqual(result, expected, "Not matched.")
 
-    def test_static_block_case1(self):
+    def test_block_case1(self):
 
         text = """
         static {
             doSomething();
         }
         """
-        tree = get_parser("static_block").parse(text)
+        tree = get_parser("block").parse(text)
         print(tree)
         result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
+            "body": [
+                {
+                    "type": "INVOCATION",
+                    "name": "doSomething",
+                    "lineno": 3,
+                    "linenoEnd": 3,
+                }
+            ],
+            "modifiers": ["static"],
             "type": "STATIC_BLOCK",
             "lineno": 2,
             "linenoEnd": 4,
-            "body": {
-                "body": [
-                    {
-                        "type": "INVOCATION",
-                        "name": "doSomething",
-                        "lineno": 3,
-                        "linenoEnd": 3,
-                    }
-                ]
-            },
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_block_case2(self):
+
+        text = """
+        {
+            doSomething();
+        }
+        """
+        tree = get_parser("block").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "body": [
+                {
+                    "type": "INVOCATION",
+                    "name": "doSomething",
+                    "lineno": 3,
+                    "linenoEnd": 3,
+                }
+            ],
+            "type": "BLOCK",
+            "lineno": 2,
+            "linenoEnd": 4,
         }
         self.assertEqual(result, expected, "Not matched.")
 
@@ -348,4 +373,3 @@ class TestMethod(unittest.TestCase):
         print(result)
         expected = {"generic": ["T"], "name": {"name": "List", "generic": ["T"]}}
         self.assertEqual(result, expected, "Not matched.")
-

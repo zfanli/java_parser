@@ -57,7 +57,8 @@ method_parameters: "(" parameters? ")" method_throws
 method_throws: ("throws" classes)? (method_body | _SEMICOLOM)
 method_body: "{" suit? "}"
 classes: class_type ("," class_type)*   -> list
-static_block: comment? "static" method_body
+block: comment? block_modifier
+block_modifier: modifiers? method_body
 
 // Class
 clazz: comment? class_package
@@ -72,7 +73,7 @@ class_def_generic: generic_type? class_extends
 class_extends: ("extends" classes)? class_interfaces
 class_interfaces: ("implements" classes)? class_throws
 class_throws: ("throws" classes)? class_body
-class_body: "{" (field | enum_class_elem | enum_field | method | static_block | clazz | comment_nouse)* "}"
+class_body: "{" (field | enum_class_elem | enum_field | method | block | clazz | comment_nouse)* "}"
 
 // Statement
 stmt: comment? stmt_base

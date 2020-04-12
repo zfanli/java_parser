@@ -16,7 +16,7 @@ from lark.exceptions import UnexpectedInput
 from java_parser import create_parser, JavaTransformer
 from helper.io_helper import save_to_file, search_files
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 __author__ = "Richard Zeng"
 
 IGNORE_LIST = [".git", "package-info.java"]

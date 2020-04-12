@@ -92,6 +92,7 @@ class ClassTransformer(Transformer):
         fields = [x for x in filtered if x["type"] in self.field_type]
         constructor = [x for x in filtered if x["type"] == self.constructor_type]
         methods = [x for x in filtered if x["type"] == self.method_type]
+        blocks = [x for x in filtered if x["type"] in self.block_type]
         inner_class = [x for x in filtered if x["type"] in self.innerclass_type]
         if len(fields) > 0:
             result["fields"] = fields
@@ -99,6 +100,8 @@ class ClassTransformer(Transformer):
             result["constructor"] = constructor
         if len(methods) > 0:
             result["methods"] = methods
+        if len(blocks) > 0:
+            result["blocks"] = blocks
         if len(inner_class) > 0:
             result["innerClasses"] = inner_class
         return result
@@ -107,3 +110,4 @@ class ClassTransformer(Transformer):
     constructor_type = "CONSTRUCTOR"
     method_type = "METHOD"
     innerclass_type = ("CLASS", "ABSTRACT_CLASS", "ENUM", "INTERFACE")
+    block_type = ("BLOCK", "STATIC_BLOCK")
