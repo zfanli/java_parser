@@ -66,6 +66,7 @@ class JavaParser:
         self._force_parse = False
         self._skip_condition = "md5"
         self._fileformat = "json"
+        self._start_timestamp = time.time()
 
     @property
     def fileformat(self):
@@ -190,14 +191,17 @@ class JavaParser:
         failed = len(self._error) if self._error is not None else 0
         skip = self._skip
         success = count - failed - skip
+        start_time = datetime.datetime.fromtimestamp(self._start_timestamp)
+        timestamp = time.time()
         report = "\n"
         report += f"Total parsed: {count}\n"
         report += f"Complete: {success}\n"
+        report += f"Complete Ratio: {int(((count - failed)/count)*100)}%\n"
         report += f"Skipped: {skip}\n"
         report += f"Failed: {failed}\n"
-        report += f"Finished time: {datetime.datetime.now()}"
-
-        timestamp = time.time()
+        report += f"Start time: {start_time}\n"
+        report += f"Finished time: {datetime.datetime.now()}\n"
+        report += f"Past: {int(timestamp - self._start_timestamp)}s\n"
 
         if self._error is not None:
             not_parsed_list = ""
@@ -367,6 +371,7 @@ class JavaParser:
 
         return output
 
+    @log("Searching files...")
     def search_and_parse(self, ignore_list=[]):
         """Search for parse"""
 

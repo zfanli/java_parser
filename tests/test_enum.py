@@ -7,7 +7,7 @@ from java_parser.method import MethodTransformer
 from java_parser.annotation import AnnotationTransformer
 
 
-class TestEnumTransformer(
+class CompoundEnumTransformer(
     CommonTransformer,
     MethodTransformer,
     AnnotationTransformer,
@@ -23,7 +23,7 @@ class TestEnum(unittest.TestCase):
         text = "public enum EnumType {ENUM_1, ENUM_2, ENUM_3}"
         tree = get_parser("enum_field").parse(text)
         print(tree)
-        result = TestEnumTransformer().transform(tree)
+        result = CompoundEnumTransformer().transform(tree)
         print(result)
         expected = {
             "name": "EnumType",

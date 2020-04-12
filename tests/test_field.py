@@ -6,7 +6,7 @@ from java_parser.method import MethodTransformer
 from java_parser.annotation import AnnotationTransformer
 
 
-class TestFieldTransformer(
+class CompoundFieldTransformer(
     CommonTransformer, MethodTransformer, AnnotationTransformer, FieldTransformer,
 ):
     pass
@@ -18,13 +18,14 @@ class TestField(unittest.TestCase):
         text = 'private static String name = "Real Name";'
         tree = get_parser("field").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = {
             "classType": "String",
             "name": "name",
             "assign": '"Real Name"',
             "modifiers": ["private", "static"],
+            "operator": "=",
             "type": "FIELD",
             "lineno": 1,
             "linenoEnd": 1,
@@ -36,7 +37,7 @@ class TestField(unittest.TestCase):
         text = "private final static String name;"
         tree = get_parser("field").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = {
             "name": "name",
@@ -53,7 +54,7 @@ class TestField(unittest.TestCase):
         text = "int[] name;"
         tree = get_parser("field").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = {
             "classType": {"name": "int", "arraySuffix": "[]"},
@@ -69,13 +70,14 @@ class TestField(unittest.TestCase):
         text = 'private static final String SOME_CONSTANT = "SOME_CONSTANT";'
         tree = get_parser("field").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = {
             "classType": "String",
             "name": "SOME_CONSTANT",
             "assign": '"SOME_CONSTANT"',
             "modifiers": ["private", "static", "final"],
+            "operator": "=",
             "type": "FIELD",
             "lineno": 1,
             "linenoEnd": 1,
@@ -87,13 +89,14 @@ class TestField(unittest.TestCase):
         text = "private int number = 12345;"
         tree = get_parser("field").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = {
             "classType": "int",
             "name": "number",
             "assign": 12345,
             "modifiers": ["private"],
+            "operator": "=",
             "type": "FIELD",
             "lineno": 1,
             "linenoEnd": 1,
@@ -105,7 +108,7 @@ class TestField(unittest.TestCase):
         text = "protected Map<String, String> map = new HashMap<>();"
         tree = get_parser("field").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = {
             "classType": {"name": "Map", "generic": ["String", "String"]},
@@ -118,6 +121,7 @@ class TestField(unittest.TestCase):
                 "type": "NEW_EXPRESSION",
             },
             "modifiers": ["protected"],
+            "operator": "=",
             "type": "FIELD",
             "lineno": 1,
             "linenoEnd": 1,
@@ -129,7 +133,7 @@ class TestField(unittest.TestCase):
         text = "private StringBuilder sb;"
         tree = get_parser("field").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = {
             "classType": "StringBuilder",
@@ -146,13 +150,14 @@ class TestField(unittest.TestCase):
         text = "public boolean flag = false;"
         tree = get_parser("field").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = {
             "classType": "boolean",
             "name": "flag",
             "assign": False,
             "modifiers": ["public"],
+            "operator": "=",
             "type": "FIELD",
             "lineno": 1,
             "linenoEnd": 1,
@@ -164,12 +169,13 @@ class TestField(unittest.TestCase):
         text = "boolean flag = false;"
         tree = get_parser("field").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = {
             "classType": "boolean",
             "name": "flag",
             "assign": False,
+            "operator": "=",
             "type": "FIELD",
             "lineno": 1,
             "linenoEnd": 1,
@@ -182,7 +188,7 @@ class TestField(unittest.TestCase):
             + "SELECT * FROM TBL ABC WHERE ABC.COL_NAME=DBC.ABCD AND ABC.FLG='0') ";"""
         tree = get_parser("field").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = {
             "classType": "String",
@@ -198,6 +204,7 @@ class TestField(unittest.TestCase):
                 "type": "ARITHMETIC_EXPRESSION",
             },
             "modifiers": ["private", "static", "final"],
+            "operator": "=",
             "type": "FIELD",
             "lineno": 1,
             "linenoEnd": 2,
@@ -212,7 +219,7 @@ class TestField(unittest.TestCase):
             + "SELECT * FROM TBL ABC WHERE ABC.COL_NAME=DBC.ABCD AND ABC.FLG='0') ";"""
         tree = get_parser("fields").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = [
             {
@@ -229,6 +236,7 @@ class TestField(unittest.TestCase):
                     "type": "ARITHMETIC_EXPRESSION",
                 },
                 "modifiers": ["private", "static", "final"],
+                "operator": "=",
                 "type": "FIELD",
                 "lineno": 1,
                 "linenoEnd": 2,
@@ -247,6 +255,7 @@ class TestField(unittest.TestCase):
                     "type": "ARITHMETIC_EXPRESSION",
                 },
                 "modifiers": ["private", "static", "final"],
+                "operator": "=",
                 "type": "FIELD",
                 "lineno": 3,
                 "linenoEnd": 4,
@@ -261,7 +270,7 @@ class TestField(unittest.TestCase):
         boolean flag = false;"""
         tree = get_parser("fields").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = [
             {
@@ -283,6 +292,7 @@ class TestField(unittest.TestCase):
                         "args": ["Some", "Values", "Here"],
                     },
                 ],
+                "operator": "=",
                 "type": "FIELD",
                 "lineno": 1,
                 "linenoEnd": 3,
@@ -302,7 +312,7 @@ class TestField(unittest.TestCase):
         boolean flag = false;"""
         tree = get_parser("fields").parse(text)
         print(tree)
-        result = TestFieldTransformer().transform(tree)
+        result = CompoundFieldTransformer().transform(tree)
         print(result)
         expected = [
             {
@@ -325,6 +335,7 @@ class TestField(unittest.TestCase):
                     },
                 ],
                 "comment": ["/**", "* Test Comment.", "* End.", "*/"],
+                "operator": "=",
                 "type": "FIELD",
                 "lineno": 2,
                 "linenoEnd": 8,

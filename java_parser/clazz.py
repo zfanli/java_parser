@@ -56,6 +56,13 @@ class ClassTransformer(Transformer):
     def class_identifier(self, child, meta):
         return {"name": child[0], **child[1]}
 
+    def class_def_generic(self, child, meta):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            result = {**child[1], "generic": child[0]}
+        return result
+
     def class_extends(self, child, meta):
         if len(child) == 1:
             result = child[0]
@@ -89,8 +96,15 @@ class ClassTransformer(Transformer):
             for x in child
             if type(x) == dict and x["type"] in ("METHOD", "CONSTRUCTOR")
         ]
+        inner_class = [
+            x
+            for x in child
+            if type(x) == dict and x["type"] in ("CLASS", "ENUM", "INTERFACE")
+        ]
         if len(fields) > 0:
             result["fields"] = fields
         if len(methods) > 0:
             result["methods"] = methods
+        if len(inner_class) > 0:
+            result["innerClasses"] = inner_class
         return result

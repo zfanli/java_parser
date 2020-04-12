@@ -4,7 +4,7 @@ from java_parser.imports import ImportTransformer
 from java_parser.common import CommonTransformer
 
 
-class TestImportTransformer(CommonTransformer, ImportTransformer):
+class CompoundImportTransformer(CommonTransformer, ImportTransformer):
     pass
 
 
@@ -14,7 +14,7 @@ class TestImport(unittest.TestCase):
         text = "import path.to.package.ClassName;"
         tree = get_parser("import_stmt").parse(text)
         print(tree)
-        result = TestImportTransformer().transform(tree)
+        result = CompoundImportTransformer().transform(tree)
         print(result)
         expected = {
             "value": "path.to.package.ClassName",
@@ -29,7 +29,7 @@ class TestImport(unittest.TestCase):
         text = "import path.to.package.*;"
         tree = get_parser("import_stmt").parse(text)
         print(tree)
-        result = TestImportTransformer().transform(tree)
+        result = CompoundImportTransformer().transform(tree)
         print(result)
         expected = {
             "value": "path.to.package.*",
@@ -44,7 +44,7 @@ class TestImport(unittest.TestCase):
         text = "import static path.to.package.*;"
         tree = get_parser("import_stmt").parse(text)
         print(tree)
-        result = TestImportTransformer().transform(tree)
+        result = CompoundImportTransformer().transform(tree)
         print(result)
         expected = {
             "value": "path.to.package.*",
@@ -64,7 +64,7 @@ class TestImport(unittest.TestCase):
         """
         tree = get_parser("imports").parse(text)
         print(tree)
-        result = TestImportTransformer().transform(tree)
+        result = CompoundImportTransformer().transform(tree)
         print(result)
         expected = [
             {

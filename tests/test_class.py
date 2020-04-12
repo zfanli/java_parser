@@ -10,7 +10,7 @@ from java_parser.enum import EnumTransformer
 from java_parser.field import FieldTransformer
 
 
-class TestClassTransformer(
+class CompoundClassTransformer(
     CommonTransformer,
     PackageTransformer,
     ImportTransformer,
@@ -59,7 +59,7 @@ public class HelloController {
         """
         tree = get_parser("clazz").parse(text)
         print(tree)
-        result = TestClassTransformer().transform(tree)
+        result = CompoundClassTransformer().transform(tree)
         print(result)
         expected = {
             "type": "CLASS",
@@ -68,6 +68,7 @@ public class HelloController {
                 {
                     "name": "VERSION",
                     "assign": '"0.1.1"',
+                    "operator": "=",
                     "classType": "String",
                     "modifiers": ["public", "final", "static"],
                     "annotations": [
@@ -190,7 +191,7 @@ public class Application {
         """
         tree = get_parser("clazz").parse(text)
         print(tree)
-        result = TestClassTransformer().transform(tree)
+        result = CompoundClassTransformer().transform(tree)
         print(result)
         expected = {
             "type": "CLASS",
@@ -199,6 +200,7 @@ public class Application {
                 {
                     "name": "SOME_CONSTANT",
                     "assign": '"SOME_CONSTANT"',
+                    "operator": "=",
                     "classType": "String",
                     "modifiers": ["private", "static", "final"],
                     "type": "FIELD",
@@ -208,6 +210,7 @@ public class Application {
                 {
                     "name": "INT_CONSTANT",
                     "assign": '"123"',
+                    "operator": "=",
                     "classType": "int",
                     "modifiers": ["private", "static", "final"],
                     "type": "FIELD",
@@ -220,12 +223,9 @@ public class Application {
                     "name": "main",
                     "body": [
                         {
-                            "body": {
-                                "name": "SpringApplication.run",
-                                "type": "INVOCATION",
-                                "args": ["Application.class", "args"],
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "SpringApplication.run",
+                            "args": ["Application.class", "args"],
                             "lineno": 19,
                             "linenoEnd": 19,
                         }
@@ -251,38 +251,33 @@ public class Application {
                                 "parameters": ["args"],
                                 "body": [
                                     {
-                                        "body": {
-                                            "name": "System.out.println",
-                                            "type": "INVOCATION",
-                                            "args": [
-                                                '"Let\'s inspect the beans provided by Spring Boot:"'
-                                            ],
-                                        },
-                                        "type": "STATEMENT",
+                                        "type": "INVOCATION",
+                                        "name": "System.out.println",
+                                        "args": [
+                                            '"Let\'s inspect the beans provided by Spring Boot:"'
+                                        ],
                                         "lineno": 26,
                                         "linenoEnd": 26,
                                     },
                                     {
+                                        "type": "STATEMENT",
                                         "name": "beanNames",
                                         "assign": {
                                             "name": "ctx.getBeanDefinitionNames",
                                             "type": "INVOCATION",
                                         },
+                                        "operator": "=",
                                         "classType": {
                                             "name": "String",
                                             "arraySuffix": "[]",
                                         },
-                                        "type": "STATEMENT",
                                         "lineno": 28,
                                         "linenoEnd": 28,
                                     },
                                     {
-                                        "body": {
-                                            "name": "Arrays.sort",
-                                            "type": "INVOCATION",
-                                            "args": ["beanNames"],
-                                        },
-                                        "type": "STATEMENT",
+                                        "type": "INVOCATION",
+                                        "name": "Arrays.sort",
+                                        "args": ["beanNames"],
                                         "lineno": 29,
                                         "linenoEnd": 29,
                                     },
@@ -298,12 +293,9 @@ public class Application {
                                         "linenoEnd": 32,
                                         "body": [
                                             {
-                                                "body": {
-                                                    "name": "System.out.println",
-                                                    "type": "INVOCATION",
-                                                    "args": ["beanName"],
-                                                },
-                                                "type": "STATEMENT",
+                                                "type": "INVOCATION",
+                                                "name": "System.out.println",
+                                                "args": ["beanName"],
                                                 "lineno": 31,
                                                 "linenoEnd": 31,
                                             }
@@ -429,7 +421,7 @@ public class Application {
         """
         tree = get_parser("clazz").parse(text)
         print(tree)
-        result = TestClassTransformer().transform(tree)
+        result = CompoundClassTransformer().transform(tree)
         print(result)
         expected = {
             "type": "CLASS",
@@ -438,16 +430,18 @@ public class Application {
                 {
                     "name": "SOME_CONSTANT",
                     "assign": '"SOME_CONSTANT"',
+                    "operator": "=",
                     "classType": "String",
                     "modifiers": ["private", "static", "final"],
-                    "comment": ["/** Another comment */"],
+                    "comment": ["/** Inline comment */", "/** Another comment */"],
                     "type": "FIELD",
-                    "lineno": 18,
+                    "lineno": 15,
                     "linenoEnd": 19,
                 },
                 {
                     "name": "INT_CONSTANT",
                     "assign": '"123"',
+                    "operator": "=",
                     "classType": "int",
                     "modifiers": ["private", "static", "final"],
                     "type": "FIELD",
@@ -460,12 +454,9 @@ public class Application {
                     "name": "main",
                     "body": [
                         {
-                            "body": {
-                                "name": "SpringApplication.run",
-                                "type": "INVOCATION",
-                                "args": ["Application.class", "args"],
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "SpringApplication.run",
+                            "args": ["Application.class", "args"],
                             "lineno": 23,
                             "linenoEnd": 23,
                         }
@@ -532,6 +523,262 @@ public class Application {
                     "lineno": 10,
                     "linenoEnd": 10,
                 },
+            ],
+            "package": {
+                "value": "com.example.springboot",
+                "type": "PACKAGE",
+                "lineno": 2,
+                "linenoEnd": 2,
+            },
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_class_case4(self):
+
+        text = """
+package com.example.springboot;
+
+import java.util.Arrays;
+
+public class TestGeneric<T> {
+	public static void main(String[] args) {
+		doSomething();
+	}
+}
+        """
+        tree = get_parser("clazz").parse(text)
+        print(tree)
+        result = CompoundClassTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "CLASS",
+            "name": "TestGeneric",
+            "methods": [
+                {
+                    "name": "main",
+                    "body": [
+                        {
+                            "type": "INVOCATION",
+                            "name": "doSomething",
+                            "lineno": 8,
+                            "linenoEnd": 8,
+                        }
+                    ],
+                    "parameters": [
+                        {
+                            "name": "args",
+                            "classType": {"name": "String", "arraySuffix": "[]"},
+                            "type": "PARAMETER",
+                        }
+                    ],
+                    "returnType": "void",
+                    "type": "METHOD",
+                    "modifiers": ["public", "static"],
+                    "lineno": 7,
+                    "linenoEnd": 9,
+                }
+            ],
+            "generic": ["T"],
+            "modifiers": ["public"],
+            "lineno": 6,
+            "linenoEnd": 10,
+            "imports": [
+                {
+                    "value": "java.util.Arrays",
+                    "type": "IMPORT",
+                    "lineno": 4,
+                    "linenoEnd": 4,
+                }
+            ],
+            "package": {
+                "value": "com.example.springboot",
+                "type": "PACKAGE",
+                "lineno": 2,
+                "linenoEnd": 2,
+            },
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_class_case5(self):
+
+        text = """
+package com.example.springboot;
+
+import java.util.Arrays;
+
+public class TestGeneric<T> extends ClassType1, ClassType2 
+        implements Interface1, Interface2 throws path.to.Exception1, Expection2 {
+	public static void main(String[] args) {
+		doSomething();
+	}
+}
+        """
+        tree = get_parser("clazz").parse(text)
+        print(tree)
+        result = CompoundClassTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "CLASS",
+            "name": "TestGeneric",
+            "methods": [
+                {
+                    "name": "main",
+                    "body": [
+                        {
+                            "type": "INVOCATION",
+                            "name": "doSomething",
+                            "lineno": 9,
+                            "linenoEnd": 9,
+                        }
+                    ],
+                    "parameters": [
+                        {
+                            "name": "args",
+                            "classType": {"name": "String", "arraySuffix": "[]"},
+                            "type": "PARAMETER",
+                        }
+                    ],
+                    "returnType": "void",
+                    "type": "METHOD",
+                    "modifiers": ["public", "static"],
+                    "lineno": 8,
+                    "linenoEnd": 10,
+                }
+            ],
+            "throws": ["path.to.Exception1", "Expection2"],
+            "interfaces": ["Interface1", "Interface2"],
+            "superclasses": ["ClassType1", "ClassType2"],
+            "generic": ["T"],
+            "modifiers": ["public"],
+            "lineno": 6,
+            "linenoEnd": 11,
+            "imports": [
+                {
+                    "value": "java.util.Arrays",
+                    "type": "IMPORT",
+                    "lineno": 4,
+                    "linenoEnd": 4,
+                }
+            ],
+            "package": {
+                "value": "com.example.springboot",
+                "type": "PACKAGE",
+                "lineno": 2,
+                "linenoEnd": 2,
+            },
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_class_case6(self):
+
+        text = """
+package com.example.springboot;
+
+import java.util.Arrays;
+
+public class TestGeneric<T> extends ClassType1, ClassType2 
+        implements Interface1, Interface2 throws path.to.Exception1, Expection2 {
+	public static void main(String[] args) {
+		doSomething();
+	}
+
+    private class InnerClass {
+        private static final int INT_CONSTANT = "123";
+
+        public void mainMethod(int a) {
+            doSomething();
+        }
+    }
+}
+        """
+        tree = get_parser("clazz").parse(text)
+        print(tree)
+        result = CompoundClassTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "CLASS",
+            "name": "TestGeneric",
+            "methods": [
+                {
+                    "name": "main",
+                    "body": [
+                        {
+                            "type": "INVOCATION",
+                            "name": "doSomething",
+                            "lineno": 9,
+                            "linenoEnd": 9,
+                        }
+                    ],
+                    "parameters": [
+                        {
+                            "name": "args",
+                            "classType": {"name": "String", "arraySuffix": "[]"},
+                            "type": "PARAMETER",
+                        }
+                    ],
+                    "returnType": "void",
+                    "type": "METHOD",
+                    "modifiers": ["public", "static"],
+                    "lineno": 8,
+                    "linenoEnd": 10,
+                }
+            ],
+            "innerClasses": [
+                {
+                    "type": "CLASS",
+                    "name": "InnerClass",
+                    "fields": [
+                        {
+                            "name": "INT_CONSTANT",
+                            "assign": '"123"',
+                            "operator": "=",
+                            "classType": "int",
+                            "modifiers": ["private", "static", "final"],
+                            "type": "FIELD",
+                            "lineno": 13,
+                            "linenoEnd": 13,
+                        }
+                    ],
+                    "methods": [
+                        {
+                            "name": "mainMethod",
+                            "body": [
+                                {
+                                    "type": "INVOCATION",
+                                    "name": "doSomething",
+                                    "lineno": 16,
+                                    "linenoEnd": 16,
+                                }
+                            ],
+                            "parameters": [
+                                {"name": "a", "classType": "int", "type": "PARAMETER"}
+                            ],
+                            "returnType": "void",
+                            "type": "METHOD",
+                            "modifiers": ["public"],
+                            "lineno": 15,
+                            "linenoEnd": 17,
+                        }
+                    ],
+                    "modifiers": ["private"],
+                    "lineno": 12,
+                    "linenoEnd": 18,
+                }
+            ],
+            "throws": ["path.to.Exception1", "Expection2"],
+            "interfaces": ["Interface1", "Interface2"],
+            "superclasses": ["ClassType1", "ClassType2"],
+            "generic": ["T"],
+            "modifiers": ["public"],
+            "lineno": 6,
+            "linenoEnd": 19,
+            "imports": [
+                {
+                    "value": "java.util.Arrays",
+                    "type": "IMPORT",
+                    "lineno": 4,
+                    "linenoEnd": 4,
+                }
             ],
             "package": {
                 "value": "com.example.springboot",

@@ -5,7 +5,7 @@ from java_parser.method import MethodTransformer
 from java_parser.common import CommonTransformer
 
 
-class TestMethodTransformer(CommonTransformer, MethodTransformer, EnumTransformer):
+class CompoundMethodTransformer(CommonTransformer, MethodTransformer, EnumTransformer):
     pass
 
 
@@ -15,7 +15,7 @@ class TestStatement(unittest.TestCase):
         text = "break;"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {"body": "break", "type": "BREAK", "lineno": 1, "linenoEnd": 1}
         self.assertEqual(result, expected, "Not matched.")
@@ -25,7 +25,7 @@ class TestStatement(unittest.TestCase):
         text = "continue;"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {"body": "continue", "type": "CONTINUE", "lineno": 1, "linenoEnd": 1}
         self.assertEqual(result, expected, "Not matched.")
@@ -35,7 +35,7 @@ class TestStatement(unittest.TestCase):
         text = "return;"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {"body": "return", "type": "RETURN", "lineno": 1, "linenoEnd": 1}
         self.assertEqual(result, expected, "Not matched.")
@@ -45,7 +45,7 @@ class TestStatement(unittest.TestCase):
         text = "return something(args);"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "RETURN",
@@ -60,7 +60,7 @@ class TestStatement(unittest.TestCase):
         text = 'throw new Exception("Something went wrong");'
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "THROW",
@@ -82,11 +82,12 @@ class TestStatement(unittest.TestCase):
         text = 'private static String name = "Real Name";'
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "name",
             "assign": '"Real Name"',
+            "operator": "=",
             "classType": "String",
             "modifiers": ["private", "static"],
             "type": "STATEMENT",
@@ -100,7 +101,7 @@ class TestStatement(unittest.TestCase):
         text = "int thisNumber = self++;"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "classType": "int",
@@ -110,6 +111,7 @@ class TestStatement(unittest.TestCase):
                 "operator": "++",
                 "type": "BINARY_AFTER_EXPRESSION",
             },
+            "operator": "=",
             "type": "STATEMENT",
             "lineno": 1,
             "linenoEnd": 1,
@@ -121,7 +123,7 @@ class TestStatement(unittest.TestCase):
         text = "String name = (String) SomeVariable.attribute;"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "classType": "String",
@@ -131,6 +133,7 @@ class TestStatement(unittest.TestCase):
                 "cast": "String",
                 "type": "CAST_EXPRESSION",
             },
+            "operator": "=",
             "type": "STATEMENT",
             "lineno": 1,
             "linenoEnd": 1,
@@ -142,7 +145,7 @@ class TestStatement(unittest.TestCase):
         text = "String name = (ArrayList<String>)SomeVariable.attribute;"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "name",
@@ -151,6 +154,7 @@ class TestStatement(unittest.TestCase):
                 "cast": {"name": "ArrayList", "generic": ["String"]},
                 "type": "CAST_EXPRESSION",
             },
+            "operator": "=",
             "classType": "String",
             "type": "STATEMENT",
             "lineno": 1,
@@ -163,7 +167,7 @@ class TestStatement(unittest.TestCase):
         text = "return sb2.toString() + WHERE_START + sb.toString() + WHERE_END;"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "body": {
@@ -189,25 +193,22 @@ class TestStatement(unittest.TestCase):
         text = 'assertThat(response.getBody().equals("Greetings from Spring Boot!"));'
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
-            "body": {
-                "name": "assertThat",
-                "type": "INVOCATION",
-                "args": [
-                    {
-                        "name": {
-                            "base": {"name": "response.getBody", "type": "INVOCATION"},
-                            "name": "equals",
-                            "type": "ATTRIBUTE",
-                        },
-                        "type": "INVOCATION",
-                        "args": ['"Greetings from Spring Boot!"'],
-                    }
-                ],
-            },
-            "type": "STATEMENT",
+            "type": "INVOCATION",
+            "name": "assertThat",
+            "args": [
+                {
+                    "name": {
+                        "base": {"name": "response.getBody", "type": "INVOCATION"},
+                        "name": "equals",
+                        "type": "ATTRIBUTE",
+                    },
+                    "type": "INVOCATION",
+                    "args": ['"Greetings from Spring Boot!"'],
+                }
+            ],
             "lineno": 1,
             "linenoEnd": 1,
         }
@@ -218,15 +219,12 @@ class TestStatement(unittest.TestCase):
         text = "doSomeThingHere(Parameter);"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
-            "body": {
-                "name": "doSomeThingHere",
-                "type": "INVOCATION",
-                "args": ["Parameter"],
-            },
-            "type": "STATEMENT",
+            "type": "INVOCATION",
+            "name": "doSomeThingHere",
+            "args": ["Parameter"],
             "lineno": 1,
             "linenoEnd": 1,
         }
@@ -237,26 +235,23 @@ class TestStatement(unittest.TestCase):
         text = "(SomeType)doSomeThingHere(Parameter).doSomething();"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
-            "body": {
-                "value": {
-                    "name": {
-                        "base": {
-                            "name": "doSomeThingHere",
-                            "type": "INVOCATION",
-                            "args": ["Parameter"],
-                        },
-                        "name": "doSomething",
-                        "type": "ATTRIBUTE",
+            "type": "CAST_EXPRESSION",
+            "value": {
+                "name": {
+                    "base": {
+                        "name": "doSomeThingHere",
+                        "type": "INVOCATION",
+                        "args": ["Parameter"],
                     },
-                    "type": "INVOCATION",
+                    "name": "doSomething",
+                    "type": "ATTRIBUTE",
                 },
-                "cast": "SomeType",
-                "type": "CAST_EXPRESSION",
+                "type": "INVOCATION",
             },
-            "type": "STATEMENT",
+            "cast": "SomeType",
             "lineno": 1,
             "linenoEnd": 1,
         }
@@ -267,7 +262,7 @@ class TestStatement(unittest.TestCase):
         text = "object = factory.makeObject(param);"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "object",
@@ -276,9 +271,122 @@ class TestStatement(unittest.TestCase):
                 "type": "INVOCATION",
                 "args": ["param"],
             },
+            "operator": "=",
             "type": "STATEMENT",
             "lineno": 1,
             "linenoEnd": 1,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case15(self):
+
+        text = "assert key != null;"
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "ASSERT",
+            "body": {
+                "left": "key",
+                "chain": [{"value": None, "operator": "!="}],
+                "type": "COMPARISON",
+            },
+            "lineno": 1,
+            "linenoEnd": 1,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case16(self):
+
+        text = """
+        someInt += Integer.parseInt(Object.get(Constant.NUMBER_0, ins.getAnother()));
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "someInt",
+            "assign": {
+                "name": "Integer.parseInt",
+                "type": "INVOCATION",
+                "args": [
+                    {
+                        "name": "Object.get",
+                        "type": "INVOCATION",
+                        "args": [
+                            "Constant.NUMBER_0",
+                            {"name": "ins.getAnother", "type": "INVOCATION"},
+                        ],
+                    }
+                ],
+            },
+            "operator": "+=",
+            "type": "STATEMENT",
+            "lineno": 2,
+            "linenoEnd": 2,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case17(self):
+
+        text = """
+        String str[];
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "body": {"name": "str", "arraySuffix": "[]", "type": "ARRAY_LITERAL_NAME"},
+            "classType": "String",
+            "type": "STATEMENT",
+            "lineno": 2,
+            "linenoEnd": 2,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case18(self):
+
+        text = """
+        wtf;;
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {"body": "wtf", "type": "STATEMENT", "lineno": 2, "linenoEnd": 2}
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case19(self):
+
+        text = """
+        wtf; ;
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {"body": "wtf", "type": "STATEMENT", "lineno": 2, "linenoEnd": 2}
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case20(self):
+
+        text = """
+        this.name = "Real Name";
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "STATEMENT",
+            "name": "this.name",
+            "assign": '"Real Name"',
+            "operator": "=",
+            "lineno": 2,
+            "linenoEnd": 2,
         }
         self.assertEqual(result, expected, "Not matched.")
 
@@ -292,46 +400,34 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("suit").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = [
             {
-                "body": {
-                    "name": "doSomeThingHere",
-                    "type": "INVOCATION",
-                    "args": ["Parameter"],
-                },
-                "type": "STATEMENT",
+                "type": "INVOCATION",
+                "name": "doSomeThingHere",
+                "args": ["Parameter"],
                 "lineno": 2,
                 "linenoEnd": 2,
             },
             {
-                "body": {
-                    "name": "doSomeThingHere",
-                    "type": "INVOCATION",
-                    "args": ["Parameter"],
-                },
-                "type": "STATEMENT",
+                "type": "INVOCATION",
+                "name": "doSomeThingHere",
+                "args": ["Parameter"],
                 "lineno": 3,
                 "linenoEnd": 3,
             },
             {
-                "body": {
-                    "name": "doSomeThingHere",
-                    "type": "INVOCATION",
-                    "args": ["Parameter"],
-                },
-                "type": "STATEMENT",
+                "type": "INVOCATION",
+                "name": "doSomeThingHere",
+                "args": ["Parameter"],
                 "lineno": 4,
                 "linenoEnd": 4,
             },
             {
-                "body": {
-                    "name": "doSomeThingHere",
-                    "type": "INVOCATION",
-                    "args": ["Parameter"],
-                },
-                "type": "STATEMENT",
+                "type": "INVOCATION",
+                "name": "doSomeThingHere",
+                "args": ["Parameter"],
                 "lineno": 5,
                 "linenoEnd": 5,
             },
@@ -355,7 +451,7 @@ class TestStatement(unittest.TestCase):
         }"""
         tree = get_parser("suit").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = [
             {
@@ -365,32 +461,23 @@ class TestStatement(unittest.TestCase):
                 "linenoEnd": 8,
                 "body": [
                     {
-                        "body": {
-                            "name": "doSomeThingHere",
-                            "type": "INVOCATION",
-                            "args": ["Parameter"],
-                        },
-                        "type": "STATEMENT",
+                        "type": "INVOCATION",
+                        "name": "doSomeThingHere",
+                        "args": ["Parameter"],
                         "lineno": 3,
                         "linenoEnd": 3,
                     },
                     {
-                        "body": {
-                            "name": "doSomeThingHere",
-                            "type": "INVOCATION",
-                            "args": ["Parameter"],
-                        },
-                        "type": "STATEMENT",
+                        "type": "INVOCATION",
+                        "name": "doSomeThingHere",
+                        "args": ["Parameter"],
                         "lineno": 4,
                         "linenoEnd": 4,
                     },
                     {
-                        "body": {
-                            "name": "doSomeThingHere",
-                            "type": "INVOCATION",
-                            "args": ["Parameter"],
-                        },
-                        "type": "STATEMENT",
+                        "type": "INVOCATION",
+                        "name": "doSomeThingHere",
+                        "args": ["Parameter"],
                         "lineno": 5,
                         "linenoEnd": 5,
                     },
@@ -402,11 +489,8 @@ class TestStatement(unittest.TestCase):
                         "linenoEnd": 8,
                         "body": [
                             {
-                                "body": {
-                                    "name": "maybeSomeCleanUpHere",
-                                    "type": "INVOCATION",
-                                },
-                                "type": "STATEMENT",
+                                "type": "INVOCATION",
+                                "name": "maybeSomeCleanUpHere",
                                 "lineno": 7,
                                 "linenoEnd": 7,
                             }
@@ -421,12 +505,9 @@ class TestStatement(unittest.TestCase):
                 "linenoEnd": 13,
                 "body": [
                     {
-                        "body": {
-                            "name": "doSomeThingHere",
-                            "type": "INVOCATION",
-                            "args": ["Parameter"],
-                        },
-                        "type": "STATEMENT",
+                        "type": "INVOCATION",
+                        "name": "doSomeThingHere",
+                        "args": ["Parameter"],
                         "lineno": 10,
                         "linenoEnd": 10,
                     }
@@ -438,11 +519,8 @@ class TestStatement(unittest.TestCase):
                         "linenoEnd": 13,
                         "body": [
                             {
-                                "body": {
-                                    "name": "maybeSomeCleanUpHere",
-                                    "type": "INVOCATION",
-                                },
-                                "type": "STATEMENT",
+                                "type": "INVOCATION",
+                                "name": "maybeSomeCleanUpHere",
                                 "lineno": 12,
                                 "linenoEnd": 12,
                             }
@@ -466,7 +544,7 @@ class TestStatement(unittest.TestCase):
         }"""
         tree = get_parser("suit").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = [
             {
@@ -476,32 +554,23 @@ class TestStatement(unittest.TestCase):
                 "linenoEnd": 6,
                 "body": [
                     {
-                        "body": {
-                            "name": "doSomeThingHere1",
-                            "type": "INVOCATION",
-                            "args": ["Parameter"],
-                        },
-                        "type": "STATEMENT",
+                        "type": "INVOCATION",
+                        "name": "doSomeThingHere1",
+                        "args": ["Parameter"],
                         "lineno": 3,
                         "linenoEnd": 3,
                     },
                     {
-                        "body": {
-                            "name": "doSomeThingHere2",
-                            "type": "INVOCATION",
-                            "args": ["Parameter"],
-                        },
-                        "type": "STATEMENT",
+                        "type": "INVOCATION",
+                        "name": "doSomeThingHere2",
+                        "args": ["Parameter"],
                         "lineno": 4,
                         "linenoEnd": 4,
                     },
                     {
-                        "body": {
-                            "name": "doSomeThingHere3",
-                            "type": "INVOCATION",
-                            "args": ["Parameter"],
-                        },
-                        "type": "STATEMENT",
+                        "type": "INVOCATION",
+                        "name": "doSomeThingHere3",
+                        "args": ["Parameter"],
                         "lineno": 5,
                         "linenoEnd": 5,
                     },
@@ -514,12 +583,9 @@ class TestStatement(unittest.TestCase):
                 "linenoEnd": 9,
                 "body": [
                     {
-                        "body": {
-                            "name": "doSomeThingHere",
-                            "type": "INVOCATION",
-                            "args": ["Parameter"],
-                        },
-                        "type": "STATEMENT",
+                        "type": "INVOCATION",
+                        "name": "doSomeThingHere",
+                        "args": ["Parameter"],
                         "lineno": 8,
                         "linenoEnd": 8,
                     }
@@ -536,7 +602,7 @@ class TestStatement(unittest.TestCase):
         }"""
         tree = get_parser("if_stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "IF",
@@ -545,12 +611,9 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 4,
             "body": [
                 {
-                    "body": {
-                        "name": "doSomeThingHere",
-                        "type": "INVOCATION",
-                        "args": ["Parameter"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomeThingHere",
+                    "args": ["Parameter"],
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
@@ -570,7 +633,7 @@ class TestStatement(unittest.TestCase):
         }"""
         tree = get_parser("if_stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "IF",
@@ -579,32 +642,23 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 8,
             "body": [
                 {
-                    "body": {
-                        "name": "doSomeThingHere",
-                        "type": "INVOCATION",
-                        "args": ["Parameter"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomeThingHere",
+                    "args": ["Parameter"],
                     "lineno": 3,
                     "linenoEnd": 3,
                 },
                 {
-                    "body": {
-                        "name": "doSomeThingHere",
-                        "type": "INVOCATION",
-                        "args": ["Parameter"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomeThingHere",
+                    "args": ["Parameter"],
                     "lineno": 4,
                     "linenoEnd": 4,
                 },
                 {
-                    "body": {
-                        "name": "doSomeThingHere",
-                        "type": "INVOCATION",
-                        "args": ["Parameter"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomeThingHere",
+                    "args": ["Parameter"],
                     "lineno": 5,
                     "linenoEnd": 5,
                 },
@@ -616,11 +670,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 8,
                     "body": [
                         {
-                            "body": {
-                                "name": "maybeSomeCleanUpHere",
-                                "type": "INVOCATION",
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "maybeSomeCleanUpHere",
                             "lineno": 7,
                             "linenoEnd": 7,
                         }
@@ -646,7 +697,7 @@ class TestStatement(unittest.TestCase):
         }"""
         tree = get_parser("if_stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "IF",
@@ -655,32 +706,23 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 12,
             "body": [
                 {
-                    "body": {
-                        "name": "doSomeThingHere",
-                        "type": "INVOCATION",
-                        "args": ["Parameter"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomeThingHere",
+                    "args": ["Parameter"],
                     "lineno": 3,
                     "linenoEnd": 3,
                 },
                 {
-                    "body": {
-                        "name": "doSomeThingHere",
-                        "type": "INVOCATION",
-                        "args": ["Parameter"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomeThingHere",
+                    "args": ["Parameter"],
                     "lineno": 4,
                     "linenoEnd": 4,
                 },
                 {
-                    "body": {
-                        "name": "doSomeThingHere",
-                        "type": "INVOCATION",
-                        "args": ["Parameter"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomeThingHere",
+                    "args": ["Parameter"],
                     "lineno": 5,
                     "linenoEnd": 5,
                 },
@@ -693,32 +735,23 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 10,
                     "body": [
                         {
-                            "body": {
-                                "name": "doOtherThingHere",
-                                "type": "INVOCATION",
-                                "args": ["OtherParameter"],
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doOtherThingHere",
+                            "args": ["OtherParameter"],
                             "lineno": 7,
                             "linenoEnd": 7,
                         },
                         {
-                            "body": {
-                                "name": "doOtherThingHere",
-                                "type": "INVOCATION",
-                                "args": ["OtherParameter"],
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doOtherThingHere",
+                            "args": ["OtherParameter"],
                             "lineno": 8,
                             "linenoEnd": 8,
                         },
                         {
-                            "body": {
-                                "name": "doOtherThingHere",
-                                "type": "INVOCATION",
-                                "args": ["OtherParameter"],
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doOtherThingHere",
+                            "args": ["OtherParameter"],
                             "lineno": 9,
                             "linenoEnd": 9,
                         },
@@ -730,11 +763,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 12,
                     "body": [
                         {
-                            "body": {
-                                "name": "maybeSomeCleanUpHere",
-                                "type": "INVOCATION",
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "maybeSomeCleanUpHere",
                             "lineno": 11,
                             "linenoEnd": 11,
                         }
@@ -761,7 +791,7 @@ class TestStatement(unittest.TestCase):
         }"""
         tree = get_parser("if_stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "IF",
@@ -776,12 +806,9 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 7,
                     "body": [
                         {
-                            "body": {
-                                "name": "doSomeThingHere",
-                                "type": "INVOCATION",
-                                "args": ["Parameter"],
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomeThingHere",
+                            "args": ["Parameter"],
                             "lineno": 4,
                             "linenoEnd": 4,
                         }
@@ -793,11 +820,8 @@ class TestStatement(unittest.TestCase):
                             "linenoEnd": 7,
                             "body": [
                                 {
-                                    "body": {
-                                        "name": "maybeSomeCleanUpHere",
-                                        "type": "INVOCATION",
-                                    },
-                                    "type": "STATEMENT",
+                                    "type": "INVOCATION",
+                                    "name": "maybeSomeCleanUpHere",
                                     "lineno": 6,
                                     "linenoEnd": 6,
                                 }
@@ -806,32 +830,23 @@ class TestStatement(unittest.TestCase):
                     ],
                 },
                 {
-                    "body": {
-                        "name": "doSomeThingHere",
-                        "type": "INVOCATION",
-                        "args": ["Parameter"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomeThingHere",
+                    "args": ["Parameter"],
                     "lineno": 8,
                     "linenoEnd": 8,
                 },
                 {
-                    "body": {
-                        "name": "doSomeThingHere",
-                        "type": "INVOCATION",
-                        "args": ["Parameter"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomeThingHere",
+                    "args": ["Parameter"],
                     "lineno": 9,
                     "linenoEnd": 9,
                 },
                 {
-                    "body": {
-                        "name": "doSomeThingHere",
-                        "type": "INVOCATION",
-                        "args": ["Parameter"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomeThingHere",
+                    "args": ["Parameter"],
                     "lineno": 10,
                     "linenoEnd": 10,
                 },
@@ -843,11 +858,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 13,
                     "body": [
                         {
-                            "body": {
-                                "name": "maybeSomeCleanUpHere",
-                                "type": "INVOCATION",
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "maybeSomeCleanUpHere",
                             "lineno": 12,
                             "linenoEnd": 12,
                         }
@@ -868,7 +880,7 @@ class TestStatement(unittest.TestCase):
             doSomeThingHere3(Parameter);"""
         tree = get_parser("if_stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "IF",
@@ -877,12 +889,9 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 7,
             "body": [
                 {
-                    "body": {
-                        "name": "doSomeThingHere1",
-                        "type": "INVOCATION",
-                        "args": ["Parameter"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomeThingHere1",
+                    "args": ["Parameter"],
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
@@ -895,12 +904,9 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 5,
                     "body": [
                         {
-                            "body": {
-                                "name": "doSomeThingHere2",
-                                "type": "INVOCATION",
-                                "args": ["Parameter"],
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomeThingHere2",
+                            "args": ["Parameter"],
                             "lineno": 5,
                             "linenoEnd": 5,
                         }
@@ -912,12 +918,9 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 7,
                     "body": [
                         {
-                            "body": {
-                                "name": "doSomeThingHere3",
-                                "type": "INVOCATION",
-                                "args": ["Parameter"],
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomeThingHere3",
+                            "args": ["Parameter"],
                             "lineno": 7,
                             "linenoEnd": 7,
                         }
@@ -935,7 +938,7 @@ class TestStatement(unittest.TestCase):
         }"""
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "IF",
@@ -950,14 +953,83 @@ class TestStatement(unittest.TestCase):
             "lineno": 2,
             "linenoEnd": 4,
             "body": [
-                {
-                    "body": {"name": "something", "type": "INVOCATION"},
-                    "type": "STATEMENT",
-                    "lineno": 3,
-                    "linenoEnd": 3,
-                }
+                {"type": "INVOCATION", "name": "something", "lineno": 3, "linenoEnd": 3}
             ],
         }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_if_case7(self):
+
+        text = """
+        /** Test 1 */
+        if (!obj.equals(Other.CONSTANTS_1)) {
+            target.doSomething(obj.format(param));
+        }
+        /** Test 2 */
+        if (!another.equals("string")) {
+            target.doMoreThing(obj.get(name));
+        }
+        """
+        tree = get_parser("suit").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = [
+            {
+                "type": "IF",
+                "test": {
+                    "value": {
+                        "name": "obj.equals",
+                        "type": "INVOCATION",
+                        "args": ["Other.CONSTANTS_1"],
+                    },
+                    "type": "TEST_NOT",
+                },
+                "lineno": 2,
+                "linenoEnd": 5,
+                "body": [
+                    {
+                        "type": "INVOCATION",
+                        "name": "target.doSomething",
+                        "args": [
+                            {
+                                "name": "obj.format",
+                                "type": "INVOCATION",
+                                "args": ["param"],
+                            }
+                        ],
+                        "lineno": 4,
+                        "linenoEnd": 4,
+                    }
+                ],
+                "comment": ["/** Test 1 */"],
+            },
+            {
+                "type": "IF",
+                "test": {
+                    "value": {
+                        "name": "another.equals",
+                        "type": "INVOCATION",
+                        "args": ['"string"'],
+                    },
+                    "type": "TEST_NOT",
+                },
+                "lineno": 6,
+                "linenoEnd": 9,
+                "body": [
+                    {
+                        "type": "INVOCATION",
+                        "name": "target.doMoreThing",
+                        "args": [
+                            {"name": "obj.get", "type": "INVOCATION", "args": ["name"]}
+                        ],
+                        "lineno": 8,
+                        "linenoEnd": 8,
+                    }
+                ],
+                "comment": ["/** Test 2 */"],
+            },
+        ]
         self.assertEqual(result, expected, "Not matched.")
 
     def test_switch_case1(self):
@@ -967,7 +1039,7 @@ class TestStatement(unittest.TestCase):
         }"""
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {"test": "mode", "type": "SWITCH", "lineno": 2, "linenoEnd": 3}
         self.assertEqual(result, expected, "Not matched.")
@@ -981,7 +1053,7 @@ class TestStatement(unittest.TestCase):
             }"""
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": "mode",
@@ -1014,7 +1086,7 @@ class TestStatement(unittest.TestCase):
             }"""
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": "mode",
@@ -1029,20 +1101,20 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 7,
                     "body": [
                         {
-                            "body": {"name": "doSomething", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomething",
                             "lineno": 4,
                             "linenoEnd": 4,
                         },
                         {
-                            "body": {"name": "doSomething", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomething",
                             "lineno": 5,
                             "linenoEnd": 5,
                         },
                         {
-                            "body": {"name": "doSomething", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomething",
                             "lineno": 6,
                             "linenoEnd": 6,
                         },
@@ -1067,7 +1139,7 @@ class TestStatement(unittest.TestCase):
             }"""
         tree = get_parser("switch_stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": "mode",
@@ -1082,14 +1154,14 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 6,
                     "body": [
                         {
-                            "body": {"name": "doSomething", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomething",
                             "lineno": 4,
                             "linenoEnd": 4,
                         },
                         {
-                            "body": {"name": "doSomething", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomething",
                             "lineno": 5,
                             "linenoEnd": 5,
                         },
@@ -1103,8 +1175,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 9,
                     "body": [
                         {
-                            "body": {"name": "doSomething", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomething",
                             "lineno": 8,
                             "linenoEnd": 8,
                         },
@@ -1125,7 +1197,7 @@ class TestStatement(unittest.TestCase):
             }"""
         tree = get_parser("switch_stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": "mode",
@@ -1140,8 +1212,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 5,
                     "body": [
                         {
-                            "body": {"name": "doNothing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doNothing",
                             "lineno": 4,
                             "linenoEnd": 4,
                         },
@@ -1163,7 +1235,7 @@ class TestStatement(unittest.TestCase):
             }"""
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": "mode",
@@ -1178,20 +1250,20 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 6,
                     "body": [
                         {
-                            "body": {"name": "doNothing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doNothing",
                             "lineno": 3,
                             "linenoEnd": 3,
                         },
                         {
-                            "body": {"name": "doNothing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doNothing",
                             "lineno": 4,
                             "linenoEnd": 4,
                         },
                         {
-                            "body": {"name": "doNothing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doNothing",
                             "lineno": 5,
                             "linenoEnd": 5,
                         },
@@ -1214,7 +1286,7 @@ class TestStatement(unittest.TestCase):
             }"""
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": "mode",
@@ -1230,20 +1302,20 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 7,
                     "body": [
                         {
-                            "body": {"name": "doNothing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doNothing",
                             "lineno": 4,
                             "linenoEnd": 4,
                         },
                         {
-                            "body": {"name": "doNothing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doNothing",
                             "lineno": 5,
                             "linenoEnd": 5,
                         },
                         {
-                            "body": {"name": "doNothing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doNothing",
                             "lineno": 6,
                             "linenoEnd": 6,
                         },
@@ -1268,7 +1340,7 @@ class TestStatement(unittest.TestCase):
             }"""
         tree = get_parser("stmt", parser="earley").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": "mode",
@@ -1283,8 +1355,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 4,
                     "body": [
                         {
-                            "body": {"name": "doNothing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doNothing",
                             "lineno": 3,
                             "linenoEnd": 3,
                         },
@@ -1298,20 +1370,20 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 9,
                     "body": [
                         {
-                            "body": {"name": "doNothing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doNothing",
                             "lineno": 6,
                             "linenoEnd": 6,
                         },
                         {
-                            "body": {"name": "doNothing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doNothing",
                             "lineno": 7,
                             "linenoEnd": 7,
                         },
                         {
-                            "body": {"name": "doNothing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doNothing",
                             "lineno": 8,
                             "linenoEnd": 8,
                         },
@@ -1336,7 +1408,7 @@ class TestStatement(unittest.TestCase):
             }"""
         tree = get_parser("stmt", parser="earley").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": "mode",
@@ -1351,8 +1423,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 4,
                     "body": [
                         {
-                            "body": {"name": "doSomething", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomething",
                             "lineno": 3,
                             "linenoEnd": 3,
                         },
@@ -1368,8 +1440,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 9,
                     "body": [
                         {
-                            "body": {"name": "doAnotherThing", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doAnotherThing",
                             "lineno": 8,
                             "linenoEnd": 8,
                         },
@@ -1390,7 +1462,7 @@ class TestStatement(unittest.TestCase):
                     }"""
         tree = get_parser("stmt", parser="earley").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": {"name": "name.method", "type": "INVOCATION"},
@@ -1405,12 +1477,9 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 5,
                     "body": [
                         {
-                            "body": {
-                                "name": "util.handleError",
-                                "type": "INVOCATION",
-                                "args": ["err", "ErrId.E123"],
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "util.handleError",
+                            "args": ["err", "ErrId.E123"],
                             "lineno": 3,
                             "linenoEnd": 4,
                         },
@@ -1419,6 +1488,38 @@ class TestStatement(unittest.TestCase):
                 }
             ],
         }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_switch_case11(self):
+
+        text = """
+        /** Test 1 */
+        switch(mode1) {
+        }
+        /** Test 2 */
+        switch(mode2) {
+        }
+        """
+        tree = get_parser("suit").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = [
+            {
+                "test": "mode1",
+                "type": "SWITCH",
+                "lineno": 2,
+                "linenoEnd": 4,
+                "comment": ["/** Test 1 */"],
+            },
+            {
+                "test": "mode2",
+                "type": "SWITCH",
+                "lineno": 5,
+                "linenoEnd": 7,
+                "comment": ["/** Test 2 */"],
+            },
+        ]
         self.assertEqual(result, expected, "Not matched.")
 
     def test_for_case1(self):
@@ -1430,37 +1531,38 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": {
                 "variable": {
-                    "name": "i",
-                    "assign": 0.0,
-                    "classType": "int",
                     "type": "STATEMENT",
+                    "name": "i",
+                    "assign": 0,
+                    "operator": "=",
+                    "classType": "int",
                     "lineno": 2,
                     "linenoEnd": 2,
                 },
                 "test": {
                     "left": "i",
-                    "chain": [{"value": 10.0, "operator": "<="}],
+                    "chain": [{"value": 10, "operator": "<="}],
                     "type": "COMPARISON",
                 },
+                "type": "FOR_LOOP_TEST",
                 "expr": {
                     "value": "i",
                     "operator": "++",
                     "type": "BINARY_AFTER_EXPRESSION",
                 },
-                "type": "FOR_LOOP_TEST",
             },
             "type": "FOR_LOOP",
             "lineno": 2,
             "linenoEnd": 4,
             "body": [
                 {
-                    "body": {"name": "doSomething", "type": "INVOCATION"},
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomething",
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
@@ -1478,7 +1580,7 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": {
@@ -1492,14 +1594,147 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 5,
             "body": [
                 {
-                    "body": {"name": "doSomething", "type": "INVOCATION"},
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomething",
                     "lineno": 3,
                     "linenoEnd": 3,
                 },
                 {"body": "continue", "type": "CONTINUE", "lineno": 4, "linenoEnd": 4},
             ],
         }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_for_case3(self):
+
+        text = """
+        for (Iterator<String> iter = obj.iterator(); iter.hasNext();) {
+            doSomething();
+            continue;
+        }
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "test": {
+                "variable": {
+                    "type": "STATEMENT",
+                    "name": "iter",
+                    "assign": {"name": "obj.iterator", "type": "INVOCATION"},
+                    "operator": "=",
+                    "classType": {"name": "Iterator", "generic": ["String"]},
+                    "lineno": 2,
+                    "linenoEnd": 2,
+                },
+                "test": {"name": "iter.hasNext", "type": "INVOCATION"},
+                "type": "FOR_LOOP_TEST",
+            },
+            "type": "FOR_LOOP",
+            "lineno": 2,
+            "linenoEnd": 5,
+            "body": [
+                {
+                    "type": "INVOCATION",
+                    "name": "doSomething",
+                    "lineno": 3,
+                    "linenoEnd": 3,
+                },
+                {"body": "continue", "type": "CONTINUE", "lineno": 4, "linenoEnd": 4},
+            ],
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_for_case4(self):
+
+        text = """
+        /** Test 1 */
+        for (int i = 0; i <= 10; i++) {
+            doSomething();
+        }
+        /** Test 2 */
+        for (int j = 0; j <= 90; j++) {
+            doMore();
+        }
+        """
+        tree = get_parser("suit").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = [
+            {
+                "test": {
+                    "variable": {
+                        "type": "STATEMENT",
+                        "name": "i",
+                        "assign": 0,
+                        "operator": "=",
+                        "classType": "int",
+                        "lineno": 3,
+                        "linenoEnd": 3,
+                    },
+                    "test": {
+                        "left": "i",
+                        "chain": [{"value": 10, "operator": "<="}],
+                        "type": "COMPARISON",
+                    },
+                    "type": "FOR_LOOP_TEST",
+                    "expr": {
+                        "value": "i",
+                        "operator": "++",
+                        "type": "BINARY_AFTER_EXPRESSION",
+                    },
+                },
+                "type": "FOR_LOOP",
+                "lineno": 2,
+                "linenoEnd": 5,
+                "body": [
+                    {
+                        "type": "INVOCATION",
+                        "name": "doSomething",
+                        "lineno": 4,
+                        "linenoEnd": 4,
+                    }
+                ],
+                "comment": ["/** Test 1 */"],
+            },
+            {
+                "test": {
+                    "variable": {
+                        "type": "STATEMENT",
+                        "name": "j",
+                        "assign": 0,
+                        "operator": "=",
+                        "classType": "int",
+                        "lineno": 7,
+                        "linenoEnd": 7,
+                    },
+                    "test": {
+                        "left": "j",
+                        "chain": [{"value": 90, "operator": "<="}],
+                        "type": "COMPARISON",
+                    },
+                    "type": "FOR_LOOP_TEST",
+                    "expr": {
+                        "value": "j",
+                        "operator": "++",
+                        "type": "BINARY_AFTER_EXPRESSION",
+                    },
+                },
+                "type": "FOR_LOOP",
+                "lineno": 6,
+                "linenoEnd": 9,
+                "body": [
+                    {
+                        "type": "INVOCATION",
+                        "name": "doMore",
+                        "lineno": 8,
+                        "linenoEnd": 8,
+                    }
+                ],
+                "comment": ["/** Test 2 */"],
+            },
+        ]
         self.assertEqual(result, expected, "Not matched.")
 
     def test_while_case1(self):
@@ -1511,7 +1746,7 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "test": "flag",
@@ -1520,8 +1755,47 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 4,
             "body": [
                 {
-                    "body": {"name": "doSomething", "type": "INVOCATION"},
+                    "type": "INVOCATION",
+                    "name": "doSomething",
+                    "lineno": 3,
+                    "linenoEnd": 3,
+                }
+            ],
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_while_case2(self):
+
+        text = """
+        while ((int i = getNumber()) > 0) {
+            doSomething();
+        }
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "test": {
+                "left": {
                     "type": "STATEMENT",
+                    "name": "i",
+                    "assign": {"name": "getNumber", "type": "INVOCATION"},
+                    "operator": "=",
+                    "classType": "int",
+                    "lineno": 2,
+                    "linenoEnd": 2,
+                },
+                "chain": [{"value": 0, "operator": ">"}],
+                "type": "COMPARISON",
+            },
+            "type": "WHILE_LOOP",
+            "lineno": 2,
+            "linenoEnd": 4,
+            "body": [
+                {
+                    "type": "INVOCATION",
+                    "name": "doSomething",
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
@@ -1538,17 +1812,17 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
-            "test": "flag",
             "type": "DO_WHILE_LOOP",
             "lineno": 2,
             "linenoEnd": 4,
+            "test": "flag",
             "body": [
                 {
-                    "body": {"name": "doSomething", "type": "INVOCATION"},
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomething",
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
@@ -1565,7 +1839,7 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "TRY",
@@ -1573,8 +1847,8 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 4,
             "body": [
                 {
-                    "body": {"name": "doSomething", "type": "INVOCATION"},
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomething",
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
@@ -1591,7 +1865,7 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "TRY",
@@ -1599,17 +1873,18 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 4,
             "body": [
                 {
-                    "body": {"name": "doSomething", "type": "INVOCATION"},
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomething",
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
             ],
             "with": {
+                "type": "STATEMENT",
                 "name": "r",
                 "assign": {"name": "getResource", "type": "INVOCATION"},
+                "operator": "=",
                 "classType": "Resource",
-                "type": "STATEMENT",
                 "lineno": 2,
                 "linenoEnd": 2,
             },
@@ -1627,7 +1902,7 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "TRY",
@@ -1643,8 +1918,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 6,
                     "body": [
                         {
-                            "body": {"name": "doSomethingElse", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomethingElse",
                             "lineno": 5,
                             "linenoEnd": 5,
                         }
@@ -1653,17 +1928,18 @@ class TestStatement(unittest.TestCase):
             ],
             "body": [
                 {
-                    "body": {"name": "doSomething", "type": "INVOCATION"},
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomething",
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
             ],
             "with": {
+                "type": "STATEMENT",
                 "name": "r",
                 "assign": {"name": "getResource", "type": "INVOCATION"},
+                "operator": "=",
                 "classType": "Resource",
-                "type": "STATEMENT",
                 "lineno": 2,
                 "linenoEnd": 2,
             },
@@ -1683,7 +1959,7 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "TRY",
@@ -1700,8 +1976,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 6,
                     "body": [
                         {
-                            "body": {"name": "doSomethingElse", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomethingElse",
                             "lineno": 5,
                             "linenoEnd": 5,
                         }
@@ -1714,8 +1990,8 @@ class TestStatement(unittest.TestCase):
                 "linenoEnd": 8,
                 "body": [
                     {
-                        "body": {"name": "nothing", "type": "INVOCATION"},
-                        "type": "STATEMENT",
+                        "type": "INVOCATION",
+                        "name": "nothing",
                         "lineno": 7,
                         "linenoEnd": 7,
                     }
@@ -1723,17 +1999,18 @@ class TestStatement(unittest.TestCase):
             },
             "body": [
                 {
-                    "body": {"name": "doSomething", "type": "INVOCATION"},
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomething",
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
             ],
             "with": {
+                "type": "STATEMENT",
                 "name": "r",
                 "assign": {"name": "getResource", "type": "INVOCATION"},
+                "operator": "=",
                 "classType": "Resource",
-                "type": "STATEMENT",
                 "lineno": 2,
                 "linenoEnd": 2,
             },
@@ -1755,7 +2032,7 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "TRY",
@@ -1772,8 +2049,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 6,
                     "body": [
                         {
-                            "body": {"name": "doSomethingElse", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomethingElse",
                             "lineno": 5,
                             "linenoEnd": 5,
                         }
@@ -1789,8 +2066,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 8,
                     "body": [
                         {
-                            "body": {"name": "doSomethingElse", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomethingElse",
                             "lineno": 7,
                             "linenoEnd": 7,
                         }
@@ -1802,27 +2079,23 @@ class TestStatement(unittest.TestCase):
                 "lineno": 8,
                 "linenoEnd": 10,
                 "body": [
-                    {
-                        "body": {"name": "no", "type": "INVOCATION"},
-                        "type": "STATEMENT",
-                        "lineno": 9,
-                        "linenoEnd": 9,
-                    }
+                    {"type": "INVOCATION", "name": "no", "lineno": 9, "linenoEnd": 9}
                 ],
             },
             "body": [
                 {
-                    "body": {"name": "doSomething", "type": "INVOCATION"},
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomething",
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
             ],
             "with": {
+                "type": "STATEMENT",
                 "name": "r",
                 "assign": {"name": "getResource", "type": "INVOCATION"},
+                "operator": "=",
                 "classType": "Resource",
-                "type": "STATEMENT",
                 "lineno": 2,
                 "linenoEnd": 2,
             },
@@ -1844,7 +2117,7 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "type": "TRY",
@@ -1861,8 +2134,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 6,
                     "body": [
                         {
-                            "body": {"name": "doSomethingElse", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomethingElse",
                             "lineno": 5,
                             "linenoEnd": 5,
                         }
@@ -1878,8 +2151,8 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 8,
                     "body": [
                         {
-                            "body": {"name": "doSomethingElse", "type": "INVOCATION"},
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "doSomethingElse",
                             "lineno": 7,
                             "linenoEnd": 7,
                         }
@@ -1891,18 +2164,13 @@ class TestStatement(unittest.TestCase):
                 "lineno": 8,
                 "linenoEnd": 10,
                 "body": [
-                    {
-                        "body": {"name": "no", "type": "INVOCATION"},
-                        "type": "STATEMENT",
-                        "lineno": 9,
-                        "linenoEnd": 9,
-                    }
+                    {"type": "INVOCATION", "name": "no", "lineno": 9, "linenoEnd": 9}
                 ],
             },
             "body": [
                 {
-                    "body": {"name": "doSomething", "type": "INVOCATION"},
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "doSomething",
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
@@ -1927,39 +2195,34 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("test").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "parameters": ["args"],
             "body": [
                 {
-                    "body": {
-                        "name": "System.out.println",
-                        "type": "INVOCATION",
-                        "args": ['"Let\'s inspect the beans provided by Spring Boot:"'],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "System.out.println",
+                    "args": ['"Let\'s inspect the beans provided by Spring Boot:"'],
                     "lineno": 4,
                     "linenoEnd": 4,
                 },
                 {
+                    "type": "STATEMENT",
                     "name": "beanNames",
                     "assign": {
                         "name": "ctx.getBeanDefinitionNames",
                         "type": "INVOCATION",
                     },
+                    "operator": "=",
                     "classType": {"name": "String", "arraySuffix": "[]"},
-                    "type": "STATEMENT",
                     "lineno": 6,
                     "linenoEnd": 6,
                 },
                 {
-                    "body": {
-                        "name": "Arrays.sort",
-                        "type": "INVOCATION",
-                        "args": ["beanNames"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "Arrays.sort",
+                    "args": ["beanNames"],
                     "lineno": 7,
                     "linenoEnd": 7,
                 },
@@ -1975,12 +2238,9 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 10,
                     "body": [
                         {
-                            "body": {
-                                "name": "System.out.println",
-                                "type": "INVOCATION",
-                                "args": ["beanName"],
-                            },
-                            "type": "STATEMENT",
+                            "type": "INVOCATION",
+                            "name": "System.out.println",
+                            "args": ["beanName"],
                             "lineno": 9,
                             "linenoEnd": 9,
                         }
@@ -2000,18 +2260,15 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("test").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "parameters": ["parameter"],
             "body": [
                 {
-                    "body": {
-                        "left": "parameter",
-                        "chain": [{"value": '" from lambda"', "operator": "+"}],
-                        "type": "ARITHMETIC_EXPRESSION",
-                    },
-                    "type": "STATEMENT",
+                    "type": "ARITHMETIC_EXPRESSION",
+                    "left": "parameter",
+                    "chain": [{"value": '" from lambda"', "operator": "+"}],
                     "lineno": 2,
                     "linenoEnd": 2,
                 }
@@ -2029,24 +2286,21 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("test").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "parameters": [{"name": "x", "classType": "int", "type": "PARAMETER"}],
             "body": [
                 {
-                    "body": {
-                        "name": "System.out.println",
-                        "type": "INVOCATION",
-                        "args": [
-                            {
-                                "left": 2.0,
-                                "chain": [{"value": "x", "operator": "*"}],
-                                "type": "ARITHMETIC_EXPRESSION",
-                            }
-                        ],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "System.out.println",
+                    "args": [
+                        {
+                            "left": 2,
+                            "chain": [{"value": "x", "operator": "*"}],
+                            "type": "ARITHMETIC_EXPRESSION",
+                        }
+                    ],
                     "lineno": 2,
                     "linenoEnd": 2,
                 }
@@ -2064,17 +2318,14 @@ class TestStatement(unittest.TestCase):
         """
         tree = get_parser("test").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "body": [
                 {
-                    "body": {
-                        "name": "System.out.println",
-                        "type": "INVOCATION",
-                        "args": ['"Print somthing!"'],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "System.out.println",
+                    "args": ['"Print somthing!"'],
                     "lineno": 2,
                     "linenoEnd": 2,
                 }
@@ -2090,12 +2341,13 @@ class TestStatement(unittest.TestCase):
         text = "String[] list = {STR_1, STR_2, STR_3};"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "list",
             "assign": ["STR_1", "STR_2", "STR_3"],
             "classType": {"name": "String", "arraySuffix": "[]"},
+            "operator": "=",
             "type": "STATEMENT",
             "lineno": 1,
             "linenoEnd": 1,
@@ -2107,18 +2359,15 @@ class TestStatement(unittest.TestCase):
         text = "new String[]{STR_1, STR_2, STR_3};"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
-            "body": {
-                "value": {
-                    "name": {"name": "String", "arraySuffix": "[]"},
-                    "type": "ARRAY_LITERAL",
-                    "value": ["STR_1", "STR_2", "STR_3"],
-                },
-                "type": "NEW_EXPRESSION",
+            "type": "NEW_EXPRESSION",
+            "value": {
+                "name": {"name": "String", "arraySuffix": "[]"},
+                "type": "ARRAY_LITERAL",
+                "value": ["STR_1", "STR_2", "STR_3"],
             },
-            "type": "STATEMENT",
             "lineno": 1,
             "linenoEnd": 1,
         }
@@ -2129,8 +2378,7 @@ class TestStatement(unittest.TestCase):
         text = "name;;"
         tree = get_parser("stmt").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {"body": "name", "type": "STATEMENT", "lineno": 1, "linenoEnd": 1}
         self.assertEqual(result, expected, "Not matched.")
-

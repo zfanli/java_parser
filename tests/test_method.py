@@ -5,7 +5,7 @@ from java_parser.annotation import AnnotationTransformer
 from java_parser.common import CommonTransformer
 
 
-class TestMethodTransformer(
+class CompoundMethodTransformer(
     CommonTransformer, AnnotationTransformer, MethodTransformer
 ):
     pass
@@ -21,18 +21,15 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("method").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "main",
             "body": [
                 {
-                    "body": {
-                        "name": "SpringApplication.run",
-                        "type": "INVOCATION",
-                        "args": ["Application.class", "args"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "SpringApplication.run",
+                    "args": ["Application.class", "args"],
                     "lineno": 3,
                     "linenoEnd": 3,
                 }
@@ -67,18 +64,15 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("method").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "main",
             "body": [
                 {
-                    "body": {
-                        "name": "SpringApplication.run",
-                        "type": "INVOCATION",
-                        "args": ["Application.class", "args"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "SpringApplication.run",
+                    "args": ["Application.class", "args"],
                     "lineno": 9,
                     "linenoEnd": 9,
                 }
@@ -127,23 +121,20 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("method").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "ThisConstructor",
+            "throws": ["Exception", "Error"],
             "body": [
                 {
-                    "body": {
-                        "name": "SpringApplication.run",
-                        "type": "INVOCATION",
-                        "args": ["Application.class", "args"],
-                    },
-                    "type": "STATEMENT",
+                    "type": "INVOCATION",
+                    "name": "SpringApplication.run",
+                    "args": ["Application.class", "args"],
                     "lineno": 7,
                     "linenoEnd": 7,
                 }
             ],
-            "throws": ["Exception", "Error"],
             "type": "CONSTRUCTOR",
             "modifiers": ["public"],
             "annotations": [
@@ -171,7 +162,7 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("method").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "ThisConstructor",
@@ -184,6 +175,52 @@ class TestMethod(unittest.TestCase):
         }
         self.assertEqual(result, expected, "Not matched.")
 
+    def test_method_case5(self):
+        text = """
+        protected abstract ReturnClassType AbstractMethodName();
+        """
+        tree = get_parser("method").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "AbstractMethodName",
+            "returnType": "ReturnClassType",
+            "type": "METHOD",
+            "modifiers": ["protected", "abstract"],
+            "lineno": 2,
+            "linenoEnd": 2,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_static_block_case1(self):
+
+        text = """
+        static {
+            doSomething();
+        }
+        """
+        tree = get_parser("static_block").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "STATIC_BLOCK",
+            "lineno": 2,
+            "linenoEnd": 4,
+            "body": {
+                "body": [
+                    {
+                        "type": "INVOCATION",
+                        "name": "doSomething",
+                        "lineno": 3,
+                        "linenoEnd": 3,
+                    }
+                ]
+            },
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
     def test_parameter_case1(self):
 
         text = """
@@ -191,7 +228,7 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("parameter").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {"name": "name", "classType": "String", "type": "PARAMETER"}
         self.assertEqual(result, expected, "Not matched.")
@@ -203,7 +240,7 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("parameter").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "name",
@@ -227,7 +264,7 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("parameter").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {"name": "args", "classType": "String...", "type": "PARAMETER"}
         self.assertEqual(result, expected, "Not matched.")
@@ -239,7 +276,7 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("parameter").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "anyClass",
@@ -255,7 +292,7 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("parameters").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = [
             {"name": "name", "classType": "String", "type": "PARAMETER"},
@@ -276,7 +313,7 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("parameter").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
             "name": "in",
@@ -295,7 +332,20 @@ class TestMethod(unittest.TestCase):
         """
         tree = get_parser("return_type").parse(text)
         print(tree)
-        result = TestMethodTransformer().transform(tree)
+        result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {"generic": ["T"], "name": "T"}
         self.assertEqual(result, expected, "Not matched.")
+
+    def test_return_type_case2(self):
+
+        text = """
+        <T> List<T>
+        """
+        tree = get_parser("return_type").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {"generic": ["T"], "name": {"name": "List", "generic": ["T"]}}
+        self.assertEqual(result, expected, "Not matched.")
+

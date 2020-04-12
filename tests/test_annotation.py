@@ -4,7 +4,7 @@ from java_parser.annotation import AnnotationTransformer
 from java_parser.common import CommonTransformer
 
 
-class TestAnnotationTransformer(CommonTransformer, AnnotationTransformer):
+class CompoundAnnotationTransformer(CommonTransformer, AnnotationTransformer):
     pass
 
 
@@ -14,7 +14,7 @@ class TestAnnotation(unittest.TestCase):
         text = "@AnnotationTest"
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "AnnotationTest",
@@ -29,7 +29,7 @@ class TestAnnotation(unittest.TestCase):
         text = "@AnnotationTest()"
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "AnnotationTest",
@@ -44,7 +44,7 @@ class TestAnnotation(unittest.TestCase):
         text = '@AnnotationTest("Literal")'
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "AnnotationTest",
@@ -60,7 +60,7 @@ class TestAnnotation(unittest.TestCase):
         text = '@AnnotationTest("Literal", true, -1, Name)'
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "AnnotationTest",
@@ -76,7 +76,7 @@ class TestAnnotation(unittest.TestCase):
         text = "@AnnotationTest({ test })"
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "AnnotationTest",
@@ -92,7 +92,7 @@ class TestAnnotation(unittest.TestCase):
         text = '@AnnotationTest({ test, "Literal", false, 123 })'
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "AnnotationTest",
@@ -108,7 +108,7 @@ class TestAnnotation(unittest.TestCase):
         text = '@AnnotationTest(key1="test", key2=true, key3=Attribute)'
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "AnnotationTest",
@@ -128,7 +128,7 @@ class TestAnnotation(unittest.TestCase):
         text = "@AnnotationTest(key1= @Filter(something))"
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "AnnotationTest",
@@ -155,7 +155,7 @@ class TestAnnotation(unittest.TestCase):
         text = '@Annotation(Key={"val1", "val2"}, Other=Parameter.another)'
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "Annotation",
@@ -174,7 +174,7 @@ class TestAnnotation(unittest.TestCase):
         text = '@Annotation("/PATH")'
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "Annotation",
@@ -190,7 +190,7 @@ class TestAnnotation(unittest.TestCase):
         text = "@Import({Target.class })"
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "Import",
@@ -214,7 +214,7 @@ class TestAnnotation(unittest.TestCase):
         """
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "ComponentScan",
@@ -251,7 +251,7 @@ class TestAnnotation(unittest.TestCase):
         """
         tree = get_parser("annotations").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = [
             {"name": "Test", "lineno": 2, "linenoEnd": 2, "type": "ANNOTATION"},
@@ -293,7 +293,7 @@ class TestAnnotation(unittest.TestCase):
         """
         tree = get_parser("annotations").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = [
             {
@@ -362,7 +362,7 @@ class TestAnnotation(unittest.TestCase):
         """
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "EmptyList",
@@ -388,7 +388,7 @@ class TestAnnotation(unittest.TestCase):
         """
         tree = get_parser("annotation").parse(text)
         print(tree)
-        result = TestAnnotationTransformer().transform(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
         print(result)
         expected = {
             "name": "EmptyList",
@@ -398,3 +398,22 @@ class TestAnnotation(unittest.TestCase):
             "args": ["{}"],
         }
         self.assertEqual(result, expected, "Not matched.")
+
+    def test_annotation_case17(self):
+
+        text = """
+        @RunWith(SpringRunner.class)
+        """
+        tree = get_parser("annotation").parse(text)
+        print(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "RunWith",
+            "lineno": 2,
+            "linenoEnd": 2,
+            "type": "ANNOTATION",
+            "args": ["SpringRunner.class"],
+        }
+        self.assertEqual(result, expected, "Not matched.")
+

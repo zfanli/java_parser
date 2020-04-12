@@ -4,7 +4,7 @@ from java_parser.package import PackageTransformer
 from java_parser.common import CommonTransformer
 
 
-class TestPackageTransformer(CommonTransformer, PackageTransformer):
+class CompoundPackageTransformer(CommonTransformer, PackageTransformer):
     pass
 
 
@@ -14,7 +14,7 @@ class TestPackage(unittest.TestCase):
         text = "package path.to.package.PackageName;"
         tree = get_parser("package_stmt").parse(text)
         print(tree)
-        result = TestPackageTransformer().transform(tree)
+        result = CompoundPackageTransformer().transform(tree)
         print(result)
         expected = {
             "value": "path.to.package.PackageName",
@@ -29,7 +29,7 @@ class TestPackage(unittest.TestCase):
         text = "package path.to.package.*;"
         tree = get_parser("package_stmt").parse(text)
         print(tree)
-        result = TestPackageTransformer().transform(tree)
+        result = CompoundPackageTransformer().transform(tree)
         print(result)
         expected = {
             "value": "path.to.package.*",

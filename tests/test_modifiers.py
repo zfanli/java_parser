@@ -3,7 +3,7 @@ from tests.helper import get_parser
 from java_parser.common import CommonTransformer
 
 
-class TestModifiersTransformer(CommonTransformer):
+class CompoundModifiersTransformer(CommonTransformer):
     pass
 
 
@@ -13,7 +13,7 @@ class TestModifiers(unittest.TestCase):
         text = "private public default protected"
         tree = get_parser("modifiers").parse(text)
         print(tree)
-        result = TestModifiersTransformer().transform(tree)
+        result = CompoundModifiersTransformer().transform(tree)
         print(result)
         expected = ["private", "public", "default", "protected"]
         self.assertEqual(result, expected, "Not matched.")
@@ -31,7 +31,7 @@ class TestModifiers(unittest.TestCase):
         """
         tree = get_parser("modifiers").parse(text)
         print(tree)
-        result = TestModifiersTransformer().transform(tree)
+        result = CompoundModifiersTransformer().transform(tree)
         print(result)
         expected = [
             "final",

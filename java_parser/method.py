@@ -7,9 +7,16 @@ from lark import Transformer, v_args
 
 @v_args(meta=True)
 class MethodTransformer(Transformer):
-    def stmt(self, child, _):
-        (child,) = child
-        return child
+    def stmt(self, child, meta):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            result = {**child[1], "comment": child[0]}
+        return {
+            **result,
+            "lineno": meta.line,
+            "linenoEnd": meta.end_line,
+        }
 
     def break_stmt(self, _, meta):
         return {"body": "break", "type": "BREAK"}
@@ -27,11 +34,15 @@ class MethodTransformer(Transformer):
         result = {"type": "THROW", "body": child[0]}
         return result
 
+    def assert_stmt(self, child, meta):
+        result = {"type": "ASSERT", "body": child[0]}
+        return result
+
     def assign_base(self, child, _):
         if len(child) == 1:
             result = {"body": child[0]}
         else:
-            result = {"name": child[0], "assign": child[1]}
+            result = {"name": child[0], "assign": child[2], "operator": str(child[1])}
         return result
 
     def assign_type(self, child, _):
@@ -49,24 +60,9 @@ class MethodTransformer(Transformer):
         return result
 
     def test_stmt(self, child, meta):
-        if len(child) == 1:
-            result = child[0]
-        else:
-            result = {**child[1], "comment": child[0]}
         return {
-            **result,
             "type": "STATEMENT",
-            "lineno": meta.line,
-            "linenoEnd": meta.end_line,
-        }
-
-    def simple_stmt(self, child, meta):
-        if len(child) == 1:
-            result = child[0]
-        else:
-            result = {**child[1], "comment": child[0]}
-        return {
-            **result,
+            **child[0],
             "lineno": meta.line,
             "linenoEnd": meta.end_line,
         }
@@ -138,12 +134,14 @@ class MethodTransformer(Transformer):
         return result
 
     def for_loop_test(self, child, _):
-        return {
+        result = {
             "variable": child[0],
             "test": child[1],
-            "expr": child[2],
             "type": "FOR_LOOP_TEST",
         }
+        if len(child) == 3:
+            result["expr"] = child[2]
+        return result
 
     def for_each_test(self, child, _):
         return {
@@ -286,4 +284,17 @@ class MethodTransformer(Transformer):
         result = {}
         if len(child) == 1:
             result["body"] = child[0]
+        return result
+
+    def static_block(self, child, meta):
+        result = {
+            "type": "STATIC_BLOCK",
+            "lineno": meta.line,
+            "linenoEnd": meta.end_line,
+        }
+        if len(child) == 1:
+            result["body"] = child[0]
+        if len(child) == 2:
+            result["body"] = child[1]
+            result["comment"] = child[0]
         return result

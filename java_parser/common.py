@@ -45,17 +45,24 @@ class CommonTransformer(Transformer):
         return ".".join(child)
 
     def concatjoin(self, child, _):
-        return "".join(child)
+        return "".join([str(x) for x in child])
 
     def comment(self, child, _):
+        result = []
+        for x in child:
+            result += x
+        return result
+
+    def comment_base(self, child, _):
         return [str(x) for x in child]
 
-    def comment_inline(self, child, _):
-        return str(child[0])
-
-    def number(self, child, _):
+    def signed_float(self, child, _):
         (child,) = child
         return float(child)
+
+    def signed_int(self, child, _):
+        (child,) = child
+        return int(child)
 
     def string(self, child, _):
         (child,) = child
@@ -66,6 +73,19 @@ class CommonTransformer(Transformer):
         if type(child) != list:
             child = [str(child)]
         return child
+
+    def generic_extends(self, child, _):
+        result = "?"
+        if len(child) == 2:
+            result = {
+                "name": "?",
+                "superclasses": child[1],
+                "type": "GENERIC_EXTENDS",
+            }
+        return result
+
+    def namearr(self, child, _):
+        return {"name": child[0], "arraySuffix": child[1], "type": "ARRAY_LITERAL_NAME"}
 
     def class_type(self, child, _):
 
@@ -259,16 +279,26 @@ class CommonTransformer(Transformer):
         return result
 
     def parameter(self, child, _):
-        if len(child) == 2:
-            result = {"name": child[1], "classType": child[0], "type": "PARAMETER"}
+        result = {"type": "PARAMETER"}
+        if len(child) == 1:
+            result = {**child[0], **result}
         else:
             result = {
-                "name": child[2],
-                "classType": child[1],
+                **child[1],
                 "annotations": child[0],
-                "type": "PARAMETER",
+                **result,
             }
         return result
+
+    def parameter_modifier(self, child, _):
+        if len(child) == 1:
+            result = child[0]
+        else:
+            result = {**child[1], "modifier": child[0]}
+        return result
+
+    def parameter_name(self, child, _):
+        return {"name": child[1], "classType": child[0]}
 
     def factor(self, child, _):
         if len(child) == 1:
@@ -338,3 +368,6 @@ class CommonTransformer(Transformer):
         else:
             result = {"generic": child[0], "name": child[1]}
         return result
+
+    def instanceof(self, child, _):
+        return {"name": child[0], "target": child[1], "type": "INSTANCEOF"}

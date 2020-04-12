@@ -2,6 +2,8 @@
 IO Helper.
 """
 
+import json
+import yaml
 from pathlib import Path
 
 
@@ -63,6 +65,19 @@ def save_to_file(filename, output):
 
     with open(filename, "w") as f:
         f.write(output)
+
+
+def json_to_yaml(filename):
+
+    path = Path(filename)
+    if not path.is_file():
+        raise IOError("Not a file.")
+    output = path.parent.joinpath(path.stem + ".yml")
+
+    with open(filename, "r") as f:
+        j = json.load(f)
+        with open(output, "w") as o:
+            yaml.dump(j, o, indent=4, allow_unicode=True)
 
 
 if __name__ == "__main__":
