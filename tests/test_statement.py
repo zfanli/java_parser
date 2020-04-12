@@ -90,7 +90,7 @@ class TestStatement(unittest.TestCase):
             "operator": "=",
             "classType": "String",
             "modifiers": ["private", "static"],
-            "type": "STATEMENT",
+            "type": "ASSIGNMENT",
             "lineno": 1,
             "linenoEnd": 1,
         }
@@ -112,7 +112,7 @@ class TestStatement(unittest.TestCase):
                 "type": "BINARY_AFTER_EXPRESSION",
             },
             "operator": "=",
-            "type": "STATEMENT",
+            "type": "ASSIGNMENT",
             "lineno": 1,
             "linenoEnd": 1,
         }
@@ -134,7 +134,7 @@ class TestStatement(unittest.TestCase):
                 "type": "CAST_EXPRESSION",
             },
             "operator": "=",
-            "type": "STATEMENT",
+            "type": "ASSIGNMENT",
             "lineno": 1,
             "linenoEnd": 1,
         }
@@ -156,7 +156,7 @@ class TestStatement(unittest.TestCase):
             },
             "operator": "=",
             "classType": "String",
-            "type": "STATEMENT",
+            "type": "ASSIGNMENT",
             "lineno": 1,
             "linenoEnd": 1,
         }
@@ -272,7 +272,7 @@ class TestStatement(unittest.TestCase):
                 "args": ["param"],
             },
             "operator": "=",
-            "type": "STATEMENT",
+            "type": "ASSIGNMENT",
             "lineno": 1,
             "linenoEnd": 1,
         }
@@ -323,7 +323,7 @@ class TestStatement(unittest.TestCase):
                 ],
             },
             "operator": "+=",
-            "type": "STATEMENT",
+            "type": "ASSIGNMENT",
             "lineno": 2,
             "linenoEnd": 2,
         }
@@ -381,8 +381,54 @@ class TestStatement(unittest.TestCase):
         result = CompoundMethodTransformer().transform(tree)
         print(result)
         expected = {
-            "type": "STATEMENT",
+            "type": "ASSIGNMENT",
             "name": "this.name",
+            "assign": '"Real Name"',
+            "operator": "=",
+            "lineno": 2,
+            "linenoEnd": 2,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case21(self):
+
+        text = """
+        arr[i] = "Real Name";
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "ASSIGNMENT",
+            "name": {"name": "arr", "index": "i", "type": "ARRAY_OPERATION"},
+            "assign": '"Real Name"',
+            "operator": "=",
+            "lineno": 2,
+            "linenoEnd": 2,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case22(self):
+
+        text = """
+        arr[i + 1] = "Real Name";
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "ASSIGNMENT",
+            "name": {
+                "name": "arr",
+                "index": {
+                    "left": "i",
+                    "chain": [{"value": 1, "operator": "+"}],
+                    "type": "ARITHMETIC_EXPRESSION",
+                },
+                "type": "ARRAY_OPERATION",
+            },
             "assign": '"Real Name"',
             "operator": "=",
             "lineno": 2,
@@ -1536,7 +1582,7 @@ class TestStatement(unittest.TestCase):
         expected = {
             "test": {
                 "variable": {
-                    "type": "STATEMENT",
+                    "type": "ASSIGNMENT",
                     "name": "i",
                     "assign": 0,
                     "operator": "=",
@@ -1619,7 +1665,7 @@ class TestStatement(unittest.TestCase):
         expected = {
             "test": {
                 "variable": {
-                    "type": "STATEMENT",
+                    "type": "ASSIGNMENT",
                     "name": "iter",
                     "assign": {"name": "obj.iterator", "type": "INVOCATION"},
                     "operator": "=",
@@ -1665,7 +1711,7 @@ class TestStatement(unittest.TestCase):
             {
                 "test": {
                     "variable": {
-                        "type": "STATEMENT",
+                        "type": "ASSIGNMENT",
                         "name": "i",
                         "assign": 0,
                         "operator": "=",
@@ -1701,7 +1747,7 @@ class TestStatement(unittest.TestCase):
             {
                 "test": {
                     "variable": {
-                        "type": "STATEMENT",
+                        "type": "ASSIGNMENT",
                         "name": "j",
                         "assign": 0,
                         "operator": "=",
@@ -1778,7 +1824,7 @@ class TestStatement(unittest.TestCase):
         expected = {
             "test": {
                 "left": {
-                    "type": "STATEMENT",
+                    "type": "ASSIGNMENT",
                     "name": "i",
                     "assign": {"name": "getNumber", "type": "INVOCATION"},
                     "operator": "=",
@@ -1880,7 +1926,7 @@ class TestStatement(unittest.TestCase):
                 }
             ],
             "with": {
-                "type": "STATEMENT",
+                "type": "ASSIGNMENT",
                 "name": "r",
                 "assign": {"name": "getResource", "type": "INVOCATION"},
                 "operator": "=",
@@ -1935,7 +1981,7 @@ class TestStatement(unittest.TestCase):
                 }
             ],
             "with": {
-                "type": "STATEMENT",
+                "type": "ASSIGNMENT",
                 "name": "r",
                 "assign": {"name": "getResource", "type": "INVOCATION"},
                 "operator": "=",
@@ -2006,7 +2052,7 @@ class TestStatement(unittest.TestCase):
                 }
             ],
             "with": {
-                "type": "STATEMENT",
+                "type": "ASSIGNMENT",
                 "name": "r",
                 "assign": {"name": "getResource", "type": "INVOCATION"},
                 "operator": "=",
@@ -2091,7 +2137,7 @@ class TestStatement(unittest.TestCase):
                 }
             ],
             "with": {
-                "type": "STATEMENT",
+                "type": "ASSIGNMENT",
                 "name": "r",
                 "assign": {"name": "getResource", "type": "INVOCATION"},
                 "operator": "=",
@@ -2208,7 +2254,7 @@ class TestStatement(unittest.TestCase):
                     "linenoEnd": 4,
                 },
                 {
-                    "type": "STATEMENT",
+                    "type": "ASSIGNMENT",
                     "name": "beanNames",
                     "assign": {
                         "name": "ctx.getBeanDefinitionNames",
@@ -2348,7 +2394,7 @@ class TestStatement(unittest.TestCase):
             "assign": ["STR_1", "STR_2", "STR_3"],
             "classType": {"name": "String", "arraySuffix": "[]"},
             "operator": "=",
-            "type": "STATEMENT",
+            "type": "ASSIGNMENT",
             "lineno": 1,
             "linenoEnd": 1,
         }

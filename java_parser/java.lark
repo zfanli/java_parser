@@ -88,8 +88,9 @@ continue_stmt: "continue" _SEMICOLOM
 return_stmt: "return" (" " test)? _SEMICOLOM
 throw_stmt: "throw" " " test _SEMICOLOM
 assert_stmt: "assert" " " test _SEMICOLOM
-?name_base: name | dotted_name | namearr
-namearr: name arr_suffix                         -> namearr
+?name_base: name | dotted_name | namearr | arr_operation
+namearr: name arr_suffix
+arr_operation: name "[" test "]"
 
 test_stmt_inline: (assign_modifier | test)       -> test_stmt
 

@@ -48,6 +48,8 @@ class ClassTransformer(Transformer):
             result = child[0]
         else:
             result = {**child[1], "modifiers": child[0]}
+            if "abstract" in child[0]:
+                result["type"] = "ABSTRACT_CLASS"
         return result
 
     def class_identity(self, child, meta):
@@ -86,25 +88,22 @@ class ClassTransformer(Transformer):
 
     def class_body(self, child, meta):
         result = {}
-        fields = [
-            x
-            for x in child
-            if type(x) == dict and x["type"] in {"FIELD", "ENUM_FIELD", "ENUM_ELEMENTS"}
-        ]
-        methods = [
-            x
-            for x in child
-            if type(x) == dict and x["type"] in ("METHOD", "CONSTRUCTOR")
-        ]
-        inner_class = [
-            x
-            for x in child
-            if type(x) == dict and x["type"] in ("CLASS", "ENUM", "INTERFACE")
-        ]
+        filtered = [x for x in child if type(x) == dict]
+        fields = [x for x in filtered if x["type"] in self.field_type]
+        constructor = [x for x in filtered if x["type"] == self.constructor_type]
+        methods = [x for x in filtered if x["type"] == self.method_type]
+        inner_class = [x for x in filtered if x["type"] in self.innerclass_type]
         if len(fields) > 0:
             result["fields"] = fields
+        if len(constructor) > 0:
+            result["constructor"] = constructor
         if len(methods) > 0:
             result["methods"] = methods
         if len(inner_class) > 0:
             result["innerClasses"] = inner_class
         return result
+
+    field_type = ("FIELD", "ENUM_FIELD", "ENUM_ELEMENTS")
+    constructor_type = "CONSTRUCTOR"
+    method_type = "METHOD"
+    innerclass_type = ("CLASS", "ABSTRACT_CLASS", "ENUM", "INTERFACE")

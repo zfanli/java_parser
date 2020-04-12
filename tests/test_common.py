@@ -973,7 +973,7 @@ class TestCommon(unittest.TestCase):
                 "name": "line",
                 "assign": {"name": "reader.readLine", "type": "INVOCATION"},
                 "operator": "=",
-                "type": "STATEMENT",
+                "type": "ASSIGNMENT",
                 "lineno": 1,
                 "linenoEnd": 1,
             },

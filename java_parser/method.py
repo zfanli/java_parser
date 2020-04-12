@@ -42,7 +42,12 @@ class MethodTransformer(Transformer):
         if len(child) == 1:
             result = {"body": child[0]}
         else:
-            result = {"name": child[0], "assign": child[2], "operator": str(child[1])}
+            result = {
+                "name": child[0],
+                "assign": child[2],
+                "operator": str(child[1]),
+                "type": "ASSIGNMENT",
+            }
         return result
 
     def assign_type(self, child, _):
@@ -58,6 +63,9 @@ class MethodTransformer(Transformer):
         else:
             result = {**child[1], "modifiers": child[0]}
         return result
+
+    def arr_operation(self, child, _):
+        return {"name": child[0], "index": child[1], "type": "ARRAY_OPERATION"}
 
     def test_stmt(self, child, meta):
         return {
