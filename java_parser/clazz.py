@@ -97,7 +97,7 @@ class ClassTransformer(Transformer):
         if len(fields) > 0:
             result["fields"] = fields
         if len(constructor) > 0:
-            result["constructor"] = constructor
+            result["constructors"] = constructor
         if len(methods) > 0:
             result["methods"] = methods
         if len(blocks) > 0:

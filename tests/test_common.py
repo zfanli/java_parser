@@ -2,9 +2,18 @@ import unittest
 from tests.helper import get_parser
 from java_parser.common import CommonTransformer
 from java_parser.method import MethodTransformer
+from java_parser.annotation import AnnotationTransformer
+from java_parser.field import FieldTransformer
+from java_parser.clazz import ClassTransformer
 
 
-class CompoundCommonTransformer(CommonTransformer, MethodTransformer):
+class CompoundCommonTransformer(
+    CommonTransformer,
+    AnnotationTransformer,
+    FieldTransformer,
+    ClassTransformer,
+    MethodTransformer,
+):
     pass
 
 
@@ -70,6 +79,21 @@ class TestCommon(unittest.TestCase):
         result = CommonTransformer().transform(tree)
         print(result)
         expected = "java.lang.IllegalStateException"
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_class_type_case7(self):
+
+        text = "List<T extends SomeBean>"
+        tree = get_parser("class_type").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "List",
+            "generic": [
+                {"name": "T", "superclasses": ["SomeBean"], "type": "GENERIC_EXTENDS"}
+            ],
+        }
         self.assertEqual(result, expected, "Not matched.")
 
     def test_cast_type_case1(self):
@@ -251,6 +275,66 @@ class TestCommon(unittest.TestCase):
         result = CommonTransformer().transform(tree)
         print(result)
         expected = "'　'"
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_primary_case17(self):
+
+        text = "0x2014af"
+        tree = get_parser("primary").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = "0x2014af"
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_primary_case18(self):
+
+        text = "0X2014AF"
+        tree = get_parser("primary").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = "0X2014AF"
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_primary_case19(self):
+
+        text = "0b0101"
+        tree = get_parser("primary").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = "0b0101"
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_primary_case20(self):
+
+        text = "0B0101"
+        tree = get_parser("primary").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = "0B0101"
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_primary_case21(self):
+
+        text = "0B0101"
+        tree = get_parser("primary").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = "0B0101"
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_primary_case22(self):
+
+        text = "01717"
+        tree = get_parser("primary").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = "01717"
         self.assertEqual(result, expected, "Not matched.")
 
     def test_comment_case1(self):
@@ -668,6 +752,26 @@ class TestCommon(unittest.TestCase):
         ]
         self.assertEqual(result, expected, "Not matched.")
 
+    def test_parameters_case4(self):
+
+        text = "String args[]"
+        tree = get_parser("parameters").parse(text)
+        print(tree)
+        result = CommonTransformer().transform(tree)
+        print(result)
+        expected = [
+            {
+                "name": {
+                    "name": "args",
+                    "arraySuffix": "[]",
+                    "type": "ARRAY_LITERAL_NAME",
+                },
+                "classType": "String",
+                "type": "PARAMETER",
+            }
+        ]
+        self.assertEqual(result, expected, "Not matched.")
+
     def test_test_case1(self):
 
         text = "new HashMap<>()"
@@ -1061,4 +1165,116 @@ class TestCommon(unittest.TestCase):
         result = CompoundCommonTransformer().transform(tree)
         print(result)
         expected = -999.9
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_test_case27(self):
+
+        text = """
+        new AnonymousClass() {
+            String field = "test";
+            public void doSomething() {
+                action();
+            }
+        }
+        """
+        tree = get_parser("test").parse(text)
+        print(tree)
+        result = CompoundCommonTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "AnonymousClass",
+            "fields": [
+                {
+                    "name": "field",
+                    "assign": '"test"',
+                    "operator": "=",
+                    "type": "FIELD",
+                    "classType": "String",
+                    "lineno": 3,
+                    "linenoEnd": 3,
+                }
+            ],
+            "methods": [
+                {
+                    "name": "doSomething",
+                    "body": [
+                        {
+                            "type": "INVOCATION",
+                            "name": "action",
+                            "lineno": 5,
+                            "linenoEnd": 5,
+                        }
+                    ],
+                    "returnType": "void",
+                    "type": "METHOD",
+                    "modifiers": ["public"],
+                    "lineno": 4,
+                    "linenoEnd": 6,
+                }
+            ],
+            "type": "ANONYMOUS_CLASS",
+            "lineno": 2,
+            "linenoEnd": 7,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_test_case28(self):
+
+        text = """
+        new AnonymousClass<GenericType>() {
+            String field = "test";
+            @Anno
+            public void doSomething() {
+                action();
+            }
+        }
+        """
+        tree = get_parser("test").parse(text)
+        print(tree)
+        result = CompoundCommonTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "AnonymousClass",
+            "generic": ["GenericType"],
+            "fields": [
+                {
+                    "name": "field",
+                    "assign": '"test"',
+                    "operator": "=",
+                    "type": "FIELD",
+                    "classType": "String",
+                    "lineno": 3,
+                    "linenoEnd": 3,
+                }
+            ],
+            "methods": [
+                {
+                    "name": "doSomething",
+                    "body": [
+                        {
+                            "type": "INVOCATION",
+                            "name": "action",
+                            "lineno": 6,
+                            "linenoEnd": 6,
+                        }
+                    ],
+                    "returnType": "void",
+                    "type": "METHOD",
+                    "modifiers": ["public"],
+                    "annotations": [
+                        {
+                            "name": "Anno",
+                            "lineno": 4,
+                            "linenoEnd": 4,
+                            "type": "ANNOTATION",
+                        }
+                    ],
+                    "lineno": 4,
+                    "linenoEnd": 7,
+                }
+            ],
+            "type": "ANONYMOUS_CLASS",
+            "lineno": 2,
+            "linenoEnd": 8,
+        }
         self.assertEqual(result, expected, "Not matched.")

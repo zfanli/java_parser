@@ -417,3 +417,28 @@ class TestAnnotation(unittest.TestCase):
         }
         self.assertEqual(result, expected, "Not matched.")
 
+    def test_annotation_case18(self):
+
+        text = """
+        @Annotation(key = "Test" + "String")
+        """
+        tree = get_parser("annotation").parse(text)
+        print(tree)
+        result = CompoundAnnotationTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "Annotation",
+            "lineno": 2,
+            "linenoEnd": 2,
+            "type": "ANNOTATION",
+            "args": [
+                {
+                    "key": "key",
+                    "left": '"Test"',
+                    "chain": [{"value": '"String"', "operator": "+"}],
+                    "type": "ARITHMETIC_EXPRESSION",
+                }
+            ],
+        }
+        self.assertEqual(result, expected, "Not matched.")
+

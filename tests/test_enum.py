@@ -208,3 +208,42 @@ class TestEnum(unittest.TestCase):
             "linenoEnd": 10,
         }
         self.assertEqual(result, expected, "Not matched.")
+
+    def test_enum_case3(self):
+
+        text = """
+            ENUM_1, ENUM_2, ENUM_3,;
+        """
+        tree = get_parser("enum_class_elem").parse(text)
+        print(tree)
+        result = CompoundEnumTransformer().transform(tree)
+        print(result)
+        expected = {
+            "body": [
+                [
+                    {
+                        "name": "ENUM_1",
+                        "type": "ENUM_ELEMENT",
+                        "lineno": 2,
+                        "linenoEnd": 2,
+                    },
+                    {
+                        "name": "ENUM_2",
+                        "type": "ENUM_ELEMENT",
+                        "lineno": 2,
+                        "linenoEnd": 2,
+                    },
+                    {
+                        "name": "ENUM_3",
+                        "type": "ENUM_ELEMENT",
+                        "lineno": 2,
+                        "linenoEnd": 2,
+                    },
+                ]
+            ],
+            "type": "ENUM_ELEMENTS",
+            "lineno": 2,
+            "linenoEnd": 2,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+

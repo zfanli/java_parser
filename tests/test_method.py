@@ -373,3 +373,41 @@ class TestMethod(unittest.TestCase):
         print(result)
         expected = {"generic": ["T"], "name": {"name": "List", "generic": ["T"]}}
         self.assertEqual(result, expected, "Not matched.")
+
+    def test_return_type_case3(self):
+
+        text = """
+        <T extends SomeGenericBase> GenericType<T>
+        """
+        tree = get_parser("return_type").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "GenericType",
+            "generic": ["T"],
+            "generic_extends": [
+                {
+                    "name": "T",
+                    "superclasses": ["SomeGenericBase"],
+                    "type": "GENERIC_EXTENDS",
+                }
+            ],
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_generic_extends_case1(self):
+
+        text = """
+        T extends SomeGenericBase
+        """
+        tree = get_parser("generic_extends").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "name": "T",
+            "superclasses": ["SomeGenericBase"],
+            "type": "GENERIC_EXTENDS",
+        }
+        self.assertEqual(result, expected, "Not matched.")

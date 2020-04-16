@@ -38,6 +38,16 @@ class MethodTransformer(Transformer):
         result = {"type": "ASSERT", "body": child[0]}
         return result
 
+    def assign_mul(self, child, _):
+        c = []
+        for x in child:
+            # For multiple assignment,
+            # variables that not initialized should be mark as declaration
+            if not "type" in x:
+                x["type"] = "DECLARATION"
+            c.append(x)
+        return {"value": c, "type": "ASSIGNMENT_MULTIPLE"}
+
     def assign_base(self, child, _):
         if len(child) == 1:
             result = {"body": child[0]}
@@ -75,6 +85,14 @@ class MethodTransformer(Transformer):
             "linenoEnd": meta.end_line,
         }
 
+    def single_stmt(self, child, _):
+        result = []
+        if len(child) == 1:
+            result = child[0]
+            if type(result) != list:
+                result = [result]
+        return result
+
     def if_stmt(self, child, meta):
         result = {
             "type": "IF",
@@ -85,7 +103,8 @@ class MethodTransformer(Transformer):
         if len(child) > 1:
             rest = child[1:]
             if type(rest[0]) == list:
-                result["body"] = rest[0]
+                if len(rest[0]) > 0:
+                    result["body"] = rest[0]
                 rest = rest[1:]
             if len(rest) != 0:
                 result["chain"] = rest
@@ -143,12 +162,26 @@ class MethodTransformer(Transformer):
 
     def for_loop_test(self, child, _):
         result = {
-            "variable": child[0],
-            "test": child[1],
+            **child[0],
+            **child[1],
             "type": "FOR_LOOP_TEST",
         }
         if len(child) == 3:
             result["expr"] = child[2]
+        return result
+
+    def for_test_var(self, child, _):
+        if len(child) == 1:
+            result = {"variable": child[0]}
+        else:
+            result = {}
+        return result
+
+    def for_test_con(self, child, _):
+        if len(child) == 1:
+            result = {"test": child[0]}
+        else:
+            result = {}
         return result
 
     def for_each_test(self, child, _):
@@ -203,6 +236,9 @@ class MethodTransformer(Transformer):
         if len(child) == 1:
             result["body"] = child[0]
         return result
+
+    def catch_ex(self, child, meta):
+        return {"name": child[1], "exceptionType": child[0]}
 
     def catch_stmt(self, child, meta):
         result = {
@@ -314,3 +350,20 @@ class MethodTransformer(Transformer):
         if len(child) == 2:
             result = {**child[1], "comment": child[0], **result}
         return result
+
+    def synchronized_stmt(self, child, meta):
+        result = {
+            "type": "SYNCHRONIZED",
+            "lineno": meta.line,
+            "linenoEnd": meta.end_line,
+        }
+        if len(child) == 1:
+            if type(child[0]) == dict:
+                child = {"target": child[0]}
+            else:
+                child = {"body": child[0]}
+            result = {**child, **result}
+        if len(child) == 2:
+            result = {"target": child[0], "body": child[1], **result}
+        return result
+

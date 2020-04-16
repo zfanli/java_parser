@@ -3,9 +3,12 @@ from tests.helper import get_parser
 from java_parser.enum import EnumTransformer
 from java_parser.method import MethodTransformer
 from java_parser.common import CommonTransformer
+from java_parser.clazz import ClassTransformer
 
 
-class CompoundMethodTransformer(CommonTransformer, MethodTransformer, EnumTransformer):
+class CompoundMethodTransformer(
+    CommonTransformer, ClassTransformer, MethodTransformer, EnumTransformer
+):
     pass
 
 
@@ -433,6 +436,197 @@ class TestStatement(unittest.TestCase):
             "operator": "=",
             "lineno": 2,
             "linenoEnd": 2,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case23(self):
+
+        text = """
+        this.arr[i + 1] = "Real Name";
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "ASSIGNMENT",
+            "name": {
+                "name": "this.arr",
+                "index": {
+                    "left": "i",
+                    "chain": [{"value": 1, "operator": "+"}],
+                    "type": "ARITHMETIC_EXPRESSION",
+                },
+                "type": "ARRAY_OPERATION",
+            },
+            "assign": '"Real Name"',
+            "operator": "=",
+            "lineno": 2,
+            "linenoEnd": 2,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case24(self):
+
+        text = """
+        String[] arr = {};
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "ASSIGNMENT",
+            "name": "arr",
+            "assign": "{}",
+            "operator": "=",
+            "classType": {"name": "String", "arraySuffix": "[]"},
+            "lineno": 2,
+            "linenoEnd": 2,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case25(self):
+
+        text = """
+        int x = 1,
+            y = 2,
+            z = 3, a, b, c, d;
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "ASSIGNMENT_MULTIPLE",
+            "value": [
+                {"name": "x", "assign": 1, "operator": "=", "type": "ASSIGNMENT"},
+                {"name": "y", "assign": 2, "operator": "=", "type": "ASSIGNMENT"},
+                {"name": "z", "assign": 3, "operator": "=", "type": "ASSIGNMENT"},
+                {"body": "a", "type": "DECLARATION"},
+                {"body": "b", "type": "DECLARATION"},
+                {"body": "c", "type": "DECLARATION"},
+                {"body": "d", "type": "DECLARATION"},
+            ],
+            "classType": "int",
+            "lineno": 2,
+            "linenoEnd": 4,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case26(self):
+
+        text = """
+        ClassType cl = new AnonymousType() {
+            public void doSomething() {
+                action();
+            }
+        };
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "ASSIGNMENT",
+            "name": "cl",
+            "assign": {
+                "name": "AnonymousType",
+                "methods": [
+                    {
+                        "name": "doSomething",
+                        "body": [
+                            {
+                                "type": "INVOCATION",
+                                "name": "action",
+                                "lineno": 4,
+                                "linenoEnd": 4,
+                            }
+                        ],
+                        "returnType": "void",
+                        "type": "METHOD",
+                        "modifiers": ["public"],
+                        "lineno": 3,
+                        "linenoEnd": 5,
+                    }
+                ],
+                "type": "ANONYMOUS_CLASS",
+                "lineno": 2,
+                "linenoEnd": 6,
+            },
+            "operator": "=",
+            "classType": "ClassType",
+            "lineno": 2,
+            "linenoEnd": 6,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case27(self):
+
+        text = """
+        ClassType cl = new AnonymousType() {
+            public void doSomething() {
+                action();
+            }
+        };
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "ASSIGNMENT",
+            "name": "cl",
+            "assign": {
+                "name": "AnonymousType",
+                "methods": [
+                    {
+                        "name": "doSomething",
+                        "body": [
+                            {
+                                "type": "INVOCATION",
+                                "name": "action",
+                                "lineno": 4,
+                                "linenoEnd": 4,
+                            }
+                        ],
+                        "returnType": "void",
+                        "type": "METHOD",
+                        "modifiers": ["public"],
+                        "lineno": 3,
+                        "linenoEnd": 5,
+                    }
+                ],
+                "type": "ANONYMOUS_CLASS",
+                "lineno": 2,
+                "linenoEnd": 6,
+            },
+            "operator": "=",
+            "classType": "ClassType",
+            "lineno": 2,
+            "linenoEnd": 6,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_stmt_case28(self):
+
+        text = """
+        synchronized (lock) {
+            action();
+        };
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "target": "lock",
+            "body": [
+                {"type": "INVOCATION", "name": "action", "lineno": 3, "linenoEnd": 3}
+            ],
+            "type": "SYNCHRONIZED",
+            "lineno": 2,
+            "linenoEnd": 4,
         }
         self.assertEqual(result, expected, "Not matched.")
 
@@ -1078,6 +1272,34 @@ class TestStatement(unittest.TestCase):
         ]
         self.assertEqual(result, expected, "Not matched.")
 
+    def test_if_case8(self):
+
+        text = """
+        if (!obj.equals(Other.CONSTANTS_1)) {
+            // target.doSomething(obj.format(param));
+        }
+        """
+        tree = get_parser("suit").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = [
+            {
+                "type": "IF",
+                "test": {
+                    "value": {
+                        "name": "obj.equals",
+                        "type": "INVOCATION",
+                        "args": ["Other.CONSTANTS_1"],
+                    },
+                    "type": "TEST_NOT",
+                },
+                "lineno": 2,
+                "linenoEnd": 4,
+            }
+        ]
+        self.assertEqual(result, expected, "Not matched.")
+
     def test_switch_case1(self):
 
         text = """
@@ -1568,6 +1790,26 @@ class TestStatement(unittest.TestCase):
         ]
         self.assertEqual(result, expected, "Not matched.")
 
+    # def test_switch_case12(self):
+
+    #     text = """
+    #     switch (id) {
+    #         case ID_0:
+    #         case ID_1: {
+    #             if (check(id, type) != constants.NO_ERROR) {
+    #                 return null;
+    #             }
+    #             return obj.get(util.trim(type));
+    #         }
+    #     }
+    #     """
+    #     tree = get_parser("suit").parse(text)
+    #     print(tree)
+    #     result = CompoundMethodTransformer().transform(tree)
+    #     print(result)
+    #     expected = []
+    #     self.assertEqual(result, expected, "Not matched.")
+
     def test_for_case1(self):
 
         text = """
@@ -1597,9 +1839,11 @@ class TestStatement(unittest.TestCase):
                 },
                 "type": "FOR_LOOP_TEST",
                 "expr": {
+                    "type": "BINARY_AFTER_EXPRESSION",
                     "value": "i",
                     "operator": "++",
-                    "type": "BINARY_AFTER_EXPRESSION",
+                    "lineno": 2,
+                    "linenoEnd": 2,
                 },
             },
             "type": "FOR_LOOP",
@@ -1726,9 +1970,11 @@ class TestStatement(unittest.TestCase):
                     },
                     "type": "FOR_LOOP_TEST",
                     "expr": {
+                        "type": "BINARY_AFTER_EXPRESSION",
                         "value": "i",
                         "operator": "++",
-                        "type": "BINARY_AFTER_EXPRESSION",
+                        "lineno": 3,
+                        "linenoEnd": 3,
                     },
                 },
                 "type": "FOR_LOOP",
@@ -1762,9 +2008,11 @@ class TestStatement(unittest.TestCase):
                     },
                     "type": "FOR_LOOP_TEST",
                     "expr": {
+                        "type": "BINARY_AFTER_EXPRESSION",
                         "value": "j",
                         "operator": "++",
-                        "type": "BINARY_AFTER_EXPRESSION",
+                        "lineno": 7,
+                        "linenoEnd": 7,
                     },
                 },
                 "type": "FOR_LOOP",
@@ -1781,6 +2029,192 @@ class TestStatement(unittest.TestCase):
                 "comment": ["/** Test 2 */"],
             },
         ]
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_for_case5(self):
+
+        text = """
+        for (int j = 0, i = 0; j <= 90; j++, i++) {
+            action();
+        }
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "test": {
+                "variable": {
+                    "type": "ASSIGNMENT_MULTIPLE",
+                    "value": [
+                        {
+                            "name": "j",
+                            "assign": 0,
+                            "operator": "=",
+                            "type": "ASSIGNMENT",
+                        },
+                        {
+                            "name": "i",
+                            "assign": 0,
+                            "operator": "=",
+                            "type": "ASSIGNMENT",
+                        },
+                    ],
+                    "classType": "int",
+                    "lineno": 2,
+                    "linenoEnd": 2,
+                },
+                "test": {
+                    "left": "j",
+                    "chain": [{"value": 90, "operator": "<="}],
+                    "type": "COMPARISON",
+                },
+                "type": "FOR_LOOP_TEST",
+                "expr": [
+                    {
+                        "type": "BINARY_AFTER_EXPRESSION",
+                        "value": "j",
+                        "operator": "++",
+                        "lineno": 2,
+                        "linenoEnd": 2,
+                    },
+                    {
+                        "type": "BINARY_AFTER_EXPRESSION",
+                        "value": "i",
+                        "operator": "++",
+                        "lineno": 2,
+                        "linenoEnd": 2,
+                    },
+                ],
+            },
+            "type": "FOR_LOOP",
+            "lineno": 2,
+            "linenoEnd": 4,
+            "body": [
+                {"type": "INVOCATION", "name": "action", "lineno": 3, "linenoEnd": 3}
+            ],
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_for_case6(self):
+
+        text = """
+        for (int i = 0; ; i++) {
+            action();
+        }
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "test": {
+                "variable": {
+                    "type": "ASSIGNMENT",
+                    "name": "i",
+                    "assign": 0,
+                    "operator": "=",
+                    "classType": "int",
+                    "lineno": 2,
+                    "linenoEnd": 2,
+                },
+                "type": "FOR_LOOP_TEST",
+                "expr": {
+                    "type": "BINARY_AFTER_EXPRESSION",
+                    "value": "i",
+                    "operator": "++",
+                    "lineno": 2,
+                    "linenoEnd": 2,
+                },
+            },
+            "type": "FOR_LOOP",
+            "lineno": 2,
+            "linenoEnd": 4,
+            "body": [
+                {"type": "INVOCATION", "name": "action", "lineno": 3, "linenoEnd": 3}
+            ],
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_for_case7(self):
+
+        text = """
+        for (; ; i++) {
+            action();
+        }
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "test": {
+                "type": "FOR_LOOP_TEST",
+                "expr": {
+                    "type": "BINARY_AFTER_EXPRESSION",
+                    "value": "i",
+                    "operator": "++",
+                    "lineno": 2,
+                    "linenoEnd": 2,
+                },
+            },
+            "type": "FOR_LOOP",
+            "lineno": 2,
+            "linenoEnd": 4,
+            "body": [
+                {"type": "INVOCATION", "name": "action", "lineno": 3, "linenoEnd": 3}
+            ],
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_for_case8(self):
+
+        text = """
+        for (Something st = get(param); st != null; st = checker.check(param)) {
+            action();
+        }
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "test": {
+                "variable": {
+                    "type": "ASSIGNMENT",
+                    "name": "st",
+                    "assign": {"name": "get", "type": "INVOCATION", "args": ["param"]},
+                    "operator": "=",
+                    "classType": "Something",
+                    "lineno": 2,
+                    "linenoEnd": 2,
+                },
+                "test": {
+                    "left": "st",
+                    "chain": [{"value": None, "operator": "!="}],
+                    "type": "COMPARISON",
+                },
+                "type": "FOR_LOOP_TEST",
+                "expr": {
+                    "type": "ASSIGNMENT",
+                    "name": "st",
+                    "assign": {
+                        "name": "checker.check",
+                        "type": "INVOCATION",
+                        "args": ["param"],
+                    },
+                    "operator": "=",
+                    "lineno": 2,
+                    "linenoEnd": 2,
+                },
+            },
+            "type": "FOR_LOOP",
+            "lineno": 2,
+            "linenoEnd": 4,
+            "body": [
+                {"type": "INVOCATION", "name": "action", "lineno": 3, "linenoEnd": 3}
+            ],
+        }
         self.assertEqual(result, expected, "Not matched.")
 
     def test_while_case1(self):
@@ -1855,6 +2289,33 @@ class TestStatement(unittest.TestCase):
         do {
             doSomething();
         } while (flag)
+        """
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "DO_WHILE_LOOP",
+            "lineno": 2,
+            "linenoEnd": 4,
+            "test": "flag",
+            "body": [
+                {
+                    "type": "INVOCATION",
+                    "name": "doSomething",
+                    "lineno": 3,
+                    "linenoEnd": 3,
+                }
+            ],
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_do_while_case2(self):
+
+        text = """
+        do {
+            doSomething();
+        } while (flag);
         """
         tree = get_parser("stmt").parse(text)
         print(tree)
@@ -1956,9 +2417,7 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 6,
             "catches": [
                 {
-                    "exceptions": [
-                        {"name": "ex", "classType": "Exception", "type": "PARAMETER"}
-                    ],
+                    "exceptions": {"name": "ex", "exceptionType": ["Exception"]},
                     "type": "CATCH",
                     "lineno": 4,
                     "linenoEnd": 6,
@@ -1997,7 +2456,7 @@ class TestStatement(unittest.TestCase):
         text = """
         try (Resource r = getResource()) {
             doSomething();
-        } catch (Exception ex | Error err) {
+        } catch (Exception | Error err) {
             doSomethingElse();
         } finally {
             nothing();
@@ -2013,10 +2472,10 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 8,
             "catches": [
                 {
-                    "exceptions": [
-                        {"name": "ex", "classType": "Exception", "type": "PARAMETER"},
-                        {"name": "err", "classType": "Error", "type": "PARAMETER"},
-                    ],
+                    "exceptions": {
+                        "name": "err",
+                        "exceptionType": ["Exception", "Error"],
+                    },
                     "type": "CATCH",
                     "lineno": 4,
                     "linenoEnd": 6,
@@ -2068,9 +2527,9 @@ class TestStatement(unittest.TestCase):
         text = """
         try (Resource r = getResource()) {
             doSomething();
-        } catch (Exception ex | Error err) {
+        } catch (Exception | Error err) {
             doSomethingElse();
-        } catch (Exception ex2 | Error err2) {
+        } catch (Exception | Error err2) {
             doSomethingElse();
         } finally {
             no();
@@ -2086,10 +2545,10 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 10,
             "catches": [
                 {
-                    "exceptions": [
-                        {"name": "ex", "classType": "Exception", "type": "PARAMETER"},
-                        {"name": "err", "classType": "Error", "type": "PARAMETER"},
-                    ],
+                    "exceptions": {
+                        "name": "err",
+                        "exceptionType": ["Exception", "Error"],
+                    },
                     "type": "CATCH",
                     "lineno": 4,
                     "linenoEnd": 6,
@@ -2103,10 +2562,10 @@ class TestStatement(unittest.TestCase):
                     ],
                 },
                 {
-                    "exceptions": [
-                        {"name": "ex2", "classType": "Exception", "type": "PARAMETER"},
-                        {"name": "err2", "classType": "Error", "type": "PARAMETER"},
-                    ],
+                    "exceptions": {
+                        "name": "err2",
+                        "exceptionType": ["Exception", "Error"],
+                    },
                     "type": "CATCH",
                     "lineno": 6,
                     "linenoEnd": 8,
@@ -2153,9 +2612,9 @@ class TestStatement(unittest.TestCase):
         text = """
         try {
             doSomething();
-        } catch (Exception ex | Error err) {
+        } catch (Exception | Error err) {
             doSomethingElse();
-        } catch (Exception ex2 | Error err2) {
+        } catch (Exception | Error err2) {
             doSomethingElse();
         } finally {
             no();
@@ -2171,10 +2630,10 @@ class TestStatement(unittest.TestCase):
             "linenoEnd": 10,
             "catches": [
                 {
-                    "exceptions": [
-                        {"name": "ex", "classType": "Exception", "type": "PARAMETER"},
-                        {"name": "err", "classType": "Error", "type": "PARAMETER"},
-                    ],
+                    "exceptions": {
+                        "name": "err",
+                        "exceptionType": ["Exception", "Error"],
+                    },
                     "type": "CATCH",
                     "lineno": 4,
                     "linenoEnd": 6,
@@ -2188,10 +2647,10 @@ class TestStatement(unittest.TestCase):
                     ],
                 },
                 {
-                    "exceptions": [
-                        {"name": "ex2", "classType": "Exception", "type": "PARAMETER"},
-                        {"name": "err2", "classType": "Error", "type": "PARAMETER"},
-                    ],
+                    "exceptions": {
+                        "name": "err2",
+                        "exceptionType": ["Exception", "Error"],
+                    },
                     "type": "CATCH",
                     "lineno": 6,
                     "linenoEnd": 8,
@@ -2414,6 +2873,43 @@ class TestStatement(unittest.TestCase):
                 "type": "ARRAY_LITERAL",
                 "value": ["STR_1", "STR_2", "STR_3"],
             },
+            "lineno": 1,
+            "linenoEnd": 1,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_list_literal_case3(self):
+
+        text = "new String[]{STR_1, STR_2, STR_3,};"
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "NEW_EXPRESSION",
+            "value": {
+                "name": {"name": "String", "arraySuffix": "[]"},
+                "type": "ARRAY_LITERAL",
+                "value": ["STR_1", "STR_2", "STR_3"],
+            },
+            "lineno": 1,
+            "linenoEnd": 1,
+        }
+        self.assertEqual(result, expected, "Not matched.")
+
+    def test_list_literal_case4(self):
+
+        text = "String[] arr = {STR_1, STR_2, STR_3,};"
+        tree = get_parser("stmt").parse(text)
+        print(tree)
+        result = CompoundMethodTransformer().transform(tree)
+        print(result)
+        expected = {
+            "type": "ASSIGNMENT",
+            "name": "arr",
+            "assign": ["STR_1", "STR_2", "STR_3"],
+            "operator": "=",
+            "classType": {"name": "String", "arraySuffix": "[]"},
             "lineno": 1,
             "linenoEnd": 1,
         }

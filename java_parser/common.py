@@ -78,7 +78,7 @@ class CommonTransformer(Transformer):
         result = "?"
         if len(child) == 2:
             result = {
-                "name": "?",
+                "name": str(child[0]),
                 "superclasses": child[1],
                 "type": "GENERIC_EXTENDS",
             }
@@ -366,8 +366,23 @@ class CommonTransformer(Transformer):
         if len(child) == 1:
             result = child[0]
         else:
-            result = {"generic": child[0], "name": child[1]}
+            class_type = child[1]
+            if type(class_type) != dict:
+                class_type = {"name": class_type}
+            result = {**class_type, "generic_extends": child[0]}
         return result
 
     def instanceof(self, child, _):
         return {"name": child[0], "target": child[1], "type": "INSTANCEOF"}
+
+    def anonymous_class(self, child, meta):
+        class_info = child[0]
+        if type(class_info) != dict:
+            class_info = {"name": class_info}
+        return {
+            **class_info,
+            **child[1],
+            "type": "ANONYMOUS_CLASS",
+            "lineno": meta.line,
+            "linenoEnd": meta.end_line,
+        }

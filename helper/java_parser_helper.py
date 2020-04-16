@@ -16,7 +16,7 @@ from lark.exceptions import UnexpectedInput
 from java_parser import create_parser, JavaTransformer
 from helper.io_helper import save_to_file, search_files
 
-__version__ = "0.2.2"
+__version__ = "0.2.4"
 __author__ = "Richard Zeng"
 
 IGNORE_LIST = [".git", "package-info.java"]
@@ -47,7 +47,33 @@ def log(message):
     return decorator_log
 
 
+remove_flag = False
+pattern_inline = re.compile(r"/\*.*\*/")
+
+
+def removecomment(content):
+    global remove_flag
+    # Remove inline comment
+    content = re.sub(pattern_inline, "", content)
+    result = ""
+    # Remove multiple line comment and keep lineno
+    for line in content.splitlines():
+        # nonlocal flag
+        if line.strip().startswith("/*"):
+            line = ""
+            remove_flag = True
+        if line.strip().endswith("*/"):
+            line = ""
+            remove_flag = False
+        if remove_flag:
+            line = ""
+        result += line + "\n"
+    return result
+
+
 class JavaParser:
+    version = __version__
+
     @log("Java Parser initialized!")
     def __init__(self):
 
@@ -56,6 +82,7 @@ class JavaParser:
         # Count files
         self._count = 0
         self._skip = 0
+        self._success = 0
         # Initial variables
         self._output = None
         self._parsed = None
@@ -67,6 +94,7 @@ class JavaParser:
         self._skip_condition = "md5"
         self._fileformat = "json"
         self._start_timestamp = time.time()
+        self._comment_ignored = None
 
     @property
     def fileformat(self):
@@ -175,8 +203,11 @@ class JavaParser:
         if self._error is None:
             self._error = []
 
+        line = error.line if hasattr(error, "line") else None
+        column = error.column if hasattr(error, "column") else None
+
         error = {
-            "filename": filename,
+            "filename": ",".join([str(x) for x in [filename, line, column]]),
             "output": f"{message}:{str(filename)}\n{str(error)}",
         }
 
@@ -190,23 +221,26 @@ class JavaParser:
         count = self._count
         failed = len(self._error) if self._error is not None else 0
         skip = self._skip
-        success = count - failed - skip
+        success = self._success
+        parsed_count = skip + success
+        complete_ratio = "%.2f" % (((parsed_count - failed) / parsed_count) * 100)
         start_time = datetime.datetime.fromtimestamp(self._start_timestamp)
         timestamp = time.time()
         report = "\n"
         report += f"Total parsed: {count}\n"
         report += f"Complete: {success}\n"
-        report += f"Complete Ratio: {int(((count - failed)/count)*100)}%\n"
+        report += f"Complete Ratio: {complete_ratio}%\n"
         report += f"Skipped: {skip}\n"
         report += f"Failed: {failed}\n"
         report += f"Start time: {start_time}\n"
         report += f"Finished time: {datetime.datetime.now()}\n"
         report += f"Past: {int(timestamp - self._start_timestamp)}s\n"
 
+        report_to_file = report
         if self._error is not None:
             not_parsed_list = ""
             for item in self._error:
-                report += f'{item["output"]}\n'
+                report_to_file += f'{item["output"]}\n'
                 not_parsed_list += str(item["filename"]) + "\n"
             if self.destination:
                 path = Path(self.destination)
@@ -214,10 +248,22 @@ class JavaParser:
                     path.joinpath(f"not_parsed_list_{timestamp}.txt"), not_parsed_list
                 )
 
+        # Save comment ignored list to file
+        if self._comment_ignored is not None:
+            comment_ignored_list = ""
+            if self.destination:
+                for item in self._comment_ignored:
+                    comment_ignored_list += f"{str(item)}\n"
+                    path = Path(self.destination)
+                    save_to_file(
+                        path.joinpath(f"comment_ignored_{timestamp}.txt"),
+                        comment_ignored_list,
+                    )
+
         # Save to file if destination is specified
         if self.destination:
             path = Path(self.destination)
-            save_to_file(path.joinpath(f"result_{timestamp}.log"), report)
+            save_to_file(path.joinpath(f"result_{timestamp}.log"), report_to_file)
             # Save parsed file list
             if self._parsed:
                 parsed = ""
@@ -268,6 +314,10 @@ class JavaParser:
             else:
                 with open(path, "r") as f:
                     content = json.load(f)
+
+                    # Always reparse if comment was skipped
+                    if "_comment_skipped" in content:
+                        return False
 
                     # Force parse if version upped
                     if not "version" in content or content["version"] != __version__:
@@ -328,24 +378,38 @@ class JavaParser:
             try:
                 # Parsing
                 tree = self._parser.parse(target)
+                # Make output object, in dict
+                output = JavaTransformer().transform(tree)
             except UnexpectedInput as identifier:
-                # try:
-                #     # Try fix comment with star prefix and parse
-                #     tree = self._parser.parse(target)
-                # except UnexpectedInput as identifier:
-                #     # Nothing can do, write error log
-                #    return self.error(identifier, "SyntaxError", filename)
-                return self.error(identifier, "ParseError", filename)
+                try:
+                    # Remove comment and try again
+                    target = removecomment(target)
+                    tree = self._parser.parse(target)
+                    # Make output object, in dict
+                    output = JavaTransformer().transform(tree)
+                    output["_comment_skipped"] = True
+                    if self._comment_ignored is None:
+                        self._comment_ignored = []
+                    self._comment_ignored.append(filename)
+                except UnexpectedInput as identifier:
+                    # Nothing can do, write error log
+                    return self.error(identifier, "ParseError", filename)
             except Exception as identifier:
                 return self.error(identifier, "Exception", filename)
 
-        # Make output object, in dict
-        output = JavaTransformer().transform(tree)
         # Add some additional info
+        self._success += 1
         output["version"] = __version__
         output["md5"] = digest
         output["fileName"] = str(filename.absolute())
-        output["fullName"] = ".".join([output["package"]["value"], output["name"]])
+
+        # Fallback for cases that package is not specified
+        if "package" in output:
+            package = output["package"]["value"]
+        else:
+            package = "default_package"
+
+        output["fullName"] = ".".join([package, output["name"]])
 
         # Set output for save to file
         self._output = output
